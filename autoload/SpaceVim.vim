@@ -528,51 +528,17 @@ elseif (has('python3')
   "     let g:spacevim_autocomplete_method = 'nvim-cmp'
   "   elseif has('python3')
   "     let g:spacevim_autocomplete_method = 'deoplete'
-  "   elseif has('lua')
-  "     let g:spacevim_autocomplete_method = 'neocomplete'
-  "   elseif has('python')
-  "     let g:spacevim_autocomplete_method = 'completor'
-  "   elseif has('timers')
-  "     let g:spacevim_autocomplete_method = 'asyncomplete'
   "   else
-  "     let g:spacevim_autocomplete_method = 'neocomplcache'
+  "     let g:spacevim_autocomplete_method = 'asyncomplete'
   "   endif
   " <
   "
   " and you can alse set this option to coc, then coc.nvim will be used.
   " If you are using neovim, you can also set this option to `nvim-cmp`, then
   " nvim-cmp will be used.
-
-  ""
-  " Set the autocomplete engine of spacevim, the default logic is:
-  " >
-  "   if has('nvim-0.9.0')
-  "     let g:spacevim_autocomplete_method = 'nvim-cmp'
-  "   elseif has('python3')
-  "     let g:spacevim_autocomplete_method = 'deoplete'
-  "   elseif has('lua')
-  "     let g:spacevim_autocomplete_method = 'neocomplete'
-  "   elseif has('python')
-  "     let g:spacevim_autocomplete_method = 'completor'
-  "   elseif has('timers')
-  "     let g:spacevim_autocomplete_method = 'asyncomplete'
-  "   else
-  "     let g:spacevim_autocomplete_method = 'neocomplcache'
-  "   endif
-  " <
-  "
-  " and you can alse set this option to coc, then coc.nvim will be used.
   let g:spacevim_autocomplete_method = 'deoplete'
-
-  " neocomplete does not work with Vim 8.2.1066
-elseif has('lua') && !has('patch-8.2.1066')
-  let g:spacevim_autocomplete_method = 'neocomplete'
-elseif has('python') && ((has('job') && has('timers') && has('lambda')) || has('nvim'))
-  let g:spacevim_autocomplete_method = 'completor'
-elseif has('timers')
-  let g:spacevim_autocomplete_method = 'asyncomplete'
 else
-  let g:spacevim_autocomplete_method = 'neocomplcache'
+  let g:spacevim_autocomplete_method = 'asyncomplete'
 endif
 
 ""
@@ -652,7 +618,6 @@ let g:spacevim_sidebar_width           = 30
 "   let g:spacevim_snippet_engine = "ultisnips"
 " <
 let g:spacevim_snippet_engine = 'neosnippet'
-let g:spacevim_enable_neocomplcache    = 0
 
 ""
 " @section enable_cursorline, options-enable_cursorline
@@ -1673,9 +1638,6 @@ function! s:lazy_end(...) abort
 
   call SpaceVim#server#connect()
 
-  if g:spacevim_enable_neocomplcache
-    let g:spacevim_autocomplete_method = 'neocomplcache'
-  endif
   if g:spacevim_enable_ycm
     if has('python') || has('python3')
       let g:spacevim_autocomplete_method = 'ycm'

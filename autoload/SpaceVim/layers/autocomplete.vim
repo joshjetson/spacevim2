@@ -21,14 +21,11 @@
 " The following completion engines are supported:
 " 
 " 1. nvim-cmp - neovim >= 0.9.0
-" 2. neocomplete - vim with `+lua`
-" 3. neocomplcache - vim without `+lua`
-" 4. deoplete - neovim with `+python3`
-" 5. coc - vim >= 8.1 or neovim >= 0.3.1
-" 6. YouCompleteMe - disabled by default, to enable ycm, see
+" 2. deoplete - neovim with `+python3`
+" 3. coc - vim >= 8.1 or neovim >= 0.3.1
+" 4. YouCompleteMe - disabled by default, to enable ycm, see
 " @section(options-enable_ycm)
-" 7. Completor - vim8 with `+python` or `+python3`
-" 8. asyncomplete - vim8 or neovim with `timers`
+" 5. asyncomplete - vim8 or neovim with `timers`
 " 
 " Snippets are supported via neosnippet(https://github.com/Shougo/neosnippet.vim).
 " 
@@ -40,11 +37,9 @@
 " 
 " - `autocomplete_method`: the possible values are:
 " - `ycm`: for YouCompleteMe
-" - `neocomplcache`
 " - `coc`: coc.nvim which also provides language server protocol feature
 " - `deoplete`
 " - `asyncomplete`
-" - `completor`
 " - `nvim-cmp`
 " 
 " here is an example:
@@ -212,16 +207,6 @@ function! SpaceVim#layers#autocomplete#plugins() abort
   endif
   if g:spacevim_autocomplete_method ==# 'ycm'
     call add(plugins, ['Valloric/YouCompleteMe',            { 'loadconf_before' : 1, 'merged' : 0}])
-  elseif g:spacevim_autocomplete_method ==# 'neocomplete'
-    call add(plugins, [g:_spacevim_root_dir . 'bundle/neocomplete.vim', {
-          \ 'on_event' : 'InsertEnter',
-          \ 'loadconf' : 1,
-          \ }])
-  elseif g:spacevim_autocomplete_method ==# 'neocomplcache' "{{{
-    call add(plugins, ['Shougo/neocomplcache.vim', {
-          \ 'on_event' : 'InsertEnter',
-          \ 'loadconf' : 1,
-          \ }])
   elseif g:spacevim_autocomplete_method ==# 'coc'
     if executable('yarn')
       call add(plugins, ['neoclide/coc.nvim',  {'loadconf': 1, 'merged': 0, 'build': 'yarn install --frozen-lockfile'}])
@@ -280,17 +265,6 @@ function! SpaceVim#layers#autocomplete#plugins() abort
           \ 'loadconf' : 1,
           \ 'merged' : 0,
           \ }])
-  elseif g:spacevim_autocomplete_method ==# 'completor'
-    call add(plugins, ['maralla/completor.vim', {
-          \ 'loadconf' : 1,
-          \ 'merged' : 0,
-          \ }])
-    if g:spacevim_snippet_engine ==# 'neosnippet'
-      call add(plugins, ['maralla/completor-neosnippet', {
-            \ 'loadconf' : 1,
-            \ 'merged' : 0,
-            \ }])
-    endif
   endif
   if has('patch-7.4.774')
     " both echodoc and CompleteParameter requires

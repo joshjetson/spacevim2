@@ -30,14 +30,6 @@ endfunction
 function! SpaceVim#layers#lang#ocaml#config() abort
     let g:syntastic_ocaml_checkers = ['merlin']
 
-    " https://github.com/ocaml/merlin/blob/master/vim/merlin/doc/merlin.txt#L333-L341
-    if g:spacevim_autocomplete_method ==# 'neocomplete'
-        if !exists('g:neocomplete#sources#omni#input_patterns')
-            let g:neocomplete#sources#omni#input_patterns = {}
-        endif
-        let g:neocomplete#sources#omni#input_patterns.ocaml = '[^. *\t]\.\w*\|\h\w*|#'
-    endif
-
     call SpaceVim#mapping#gd#add('ocaml', function('s:go_to_def'))
     call SpaceVim#mapping#space#regesit_lang_mappings('ocaml', function('s:language_specified_mappings'))
 endfunction

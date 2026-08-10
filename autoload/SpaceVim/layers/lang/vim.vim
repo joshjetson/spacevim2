@@ -80,10 +80,6 @@ function! SpaceVim#layers#lang#vim#plugins() abort
             \ }])
     elseif g:spacevim_autocomplete_method ==# 'coc'
       call add(plugins, ['neoclide/coc-neco', {'merged' : 0}])
-    elseif g:spacevim_autocomplete_method ==# 'completor'
-      " call add(plugins, ['kyouryuukunn/completor-necovim', {'merged' : 0}])
-      " This plugin has bug in neovim-qt win 7
-      " https://github.com/maralla/completor.vim/issues/250
     endif
   endif
   call add(plugins, [g:_spacevim_root_dir . 'bundle/helpful.vim', {'merged' : 0, 'on_cmd' : 'HelpfulVersion'}])

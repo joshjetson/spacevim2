@@ -479,14 +479,8 @@ Set the autocomplete engine of spacevim, the default logic is:
     let g:spacevim_autocomplete_method = 'nvim-cmp'
   elseif has('python3')
     let g:spacevim_autocomplete_method = 'deoplete'
-  elseif has('lua')
-    let g:spacevim_autocomplete_method = 'neocomplete'
-  elseif has('python')
-    let g:spacevim_autocomplete_method = 'completor'
-  elseif has('timers')
-    let g:spacevim_autocomplete_method = 'asyncomplete'
   else
-    let g:spacevim_autocomplete_method = 'neocomplcache'
+    let g:spacevim_autocomplete_method = 'asyncomplete'
   endif
 <
 
@@ -1326,14 +1320,8 @@ Set the autocomplete engine of spacevim, the default logic is:
     let g:spacevim_autocomplete_method = 'nvim-cmp'
   elseif has('python3')
     let g:spacevim_autocomplete_method = 'deoplete'
-  elseif has('lua')
-    let g:spacevim_autocomplete_method = 'neocomplete'
-  elseif has('python')
-    let g:spacevim_autocomplete_method = 'completor'
-  elseif has('timers')
-    let g:spacevim_autocomplete_method = 'asyncomplete'
   else
-    let g:spacevim_autocomplete_method = 'neocomplcache'
+    let g:spacevim_autocomplete_method = 'asyncomplete'
   endif
 <
 
@@ -2046,14 +2034,11 @@ file:
 The following completion engines are supported:
 
   1. nvim-cmp - neovim >= 0.9.0
-  2. neocomplete - vim with `+lua`
-  3. neocomplcache - vim without `+lua`
-  4. deoplete - neovim with `+python3`
-  5. coc - vim >= 8.1 or neovim >= 0.3.1
-  6. YouCompleteMe - disabled by default, to enable ycm, see
+  2. deoplete - neovim with `+python3`
+  3. coc - vim >= 8.1 or neovim >= 0.3.1
+  4. YouCompleteMe - disabled by default, to enable ycm, see
 |SpaceVim-options-enable_ycm|
-  7. Completor - vim8 with `+python` or `+python3`
-  8. asyncomplete - vim8 or neovim with `timers`
+  5. asyncomplete - vim8 or neovim with `timers`
 
 Snippets are supported via
 neosnippet(https://github.com/Shougo/neosnippet.vim).
@@ -2066,11 +2051,9 @@ following variable:
 
 `autocomplete_method`: the possible values are:
 `ycm`: for YouCompleteMe
-`neocomplcache`
 `coc`: coc.nvim which also provides language server protocol feature
 `deoplete`
 `asyncomplete`
-`completor`
 `nvim-cmp`
 
 here is an example:
