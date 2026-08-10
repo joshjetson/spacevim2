@@ -3,7 +3,11 @@ let g:_spacevim_root_dir = fnamemodify(fnamemodify(expand('<sfile>'),
       \ || has('win64'))?'\':'/') . '?'), ':p:gs?[\\/]?/?')
 filetype off
 set rtp+=build/vader
-set rtp+=.
+" Prepend (^=) the repo root so it beats a SpaceVim install that vim's default
+" runtimepath already contains (e.g. ~/.vim symlinked to ~/.SpaceVim). With a
+" plain append (+=), autoload#SpaceVim#... would resolve from the installed copy
+" instead of this checkout, silently testing the wrong tree.
+set rtp^=.
 set rtp+=after
 set noswapfile
 filetype plugin indent on
