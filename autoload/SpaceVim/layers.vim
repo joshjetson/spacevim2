@@ -145,11 +145,7 @@ function! s:find_layers() abort
       else
         let url = name
       endif
-      if filereadable(expand('~/.SpaceVim/docs/layers/' . url . '.md'))
-        let website = 'https://spacevim.org/layers/' . url . '/'
-      else
-        let website = 'no exists'
-      endif
+      let website = 'https://spacevim.org/layers/' . url . '/'
       let name = substitute(name, '/', '#','g')
       if status ==# 'loaded'
         call add(rst, '+ ' . name . ':' . repeat(' ', 25 - len(name)) . status . repeat(' ', 10) . website)

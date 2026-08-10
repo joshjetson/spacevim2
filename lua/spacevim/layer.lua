@@ -43,11 +43,7 @@ local function find_layers()
         else
             url = name
         end
-        if sp.fn.filereadable(sp.fn.expand('~/.SpaceVim/docs/layers/' .. url .. '.md')) == 1 then
-            website = 'https://spacevim.org/layers/' .. url .. '/'
-        else
-            website = 'no exists'
-        end
+        website = 'https://spacevim.org/layers/' .. url .. '/'
         name = sp.fn.substitute(name, '/', '#','g')
         if M.isLoaded(name) then
             status = 'loaded'

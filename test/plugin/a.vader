@@ -1,13 +1,10 @@
 Execute ( SpaceVim plugin: a.vim ):
   call SpaceVim#plugins#a#set_config_name(getcwd(), '.SpaceVim.d/projections.toml')
   let root = SpaceVim#plugins#a#getConfigPath()
-  AssertEqual SpaceVim#plugins#a#get_alt('docs/index.md', root, 1), 'docs/cn/index.md'
-  AssertEqual SpaceVim#plugins#a#get_alt('docs/cn/index.md', root, 1), 'docs/index.md'
-  AssertEqual SpaceVim#plugins#a#get_alt('docs/api/job.md', root, 1), 'docs/cn/api/job.md'
-  AssertEqual SpaceVim#plugins#a#get_alt('docs/cn/api/job.md', root, 1), 'docs/api/job.md'
-  AssertEqual SpaceVim#plugins#a#get_alt('docs/_posts/2018-09-28-use-vim-as-ide.md', root, 1), 'docs/_posts/2018-09-27-use-vim-as-ide.md'
-  AssertEqual SpaceVim#plugins#a#get_alt('docs/_posts/2018-09-27-use-vim-as-ide.md', root, 1), 'docs/_posts/2018-09-28-use-vim-as-ide.md'
-  AssertEqual SpaceVim#plugins#a#get_alt('docs/_posts/2020-01-28-manage-project-alternate-files.md', root, 1), 'docs/_posts/2020-01-27-manage-project-alternate-files.md'
-  AssertEqual SpaceVim#plugins#a#get_alt('docs/_posts/2020-01-27-manage-project-alternate-files.md', root, 1), 'docs/_posts/2020-01-28-manage-project-alternate-files.md'
+  AssertEqual SpaceVim#plugins#a#get_alt('test/api/job.vader', root, 1), 'autoload/SpaceVim/api/job.vim'
+  AssertEqual SpaceVim#plugins#a#get_alt('autoload/SpaceVim/api/job.vim', root, 1), 'test/api/job.vader'
+  AssertEqual SpaceVim#plugins#a#get_alt('test/plugin/a.vader', root, 1), 'autoload/SpaceVim/plugins/a.vim'
+  AssertEqual SpaceVim#plugins#a#get_alt('autoload/SpaceVim/plugins/a.vim', root, 1), 'test/plugin/a.vader'
+  AssertEqual SpaceVim#plugins#a#get_alt('doc/SpaceVim.txt', root, 1), 'doc/SpaceVim.cnx'
+  AssertEqual SpaceVim#plugins#a#get_alt('doc/SpaceVim.cnx', root, 1), 'doc/SpaceVim.txt'
   unlet root
-
