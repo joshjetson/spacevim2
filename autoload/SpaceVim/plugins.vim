@@ -93,15 +93,9 @@ function! SpaceVim#plugins#complete_plugs(ArgLead, CmdLine, CursorPos) abort
 endfunction
 
 function! s:disable_plugins(plugin_list) abort
-  if g:spacevim_plugin_manager ==# 'dein'
-    for name in a:plugin_list
-      call dein#disable(name)
-    endfor
-  elseif g:spacevim_plugin_manager ==# 'neobundle'
-    for name in a:plugin_list
-      call neobundle#config#disable(name)
-    endfor
-  endif
+  for name in a:plugin_list
+    call dein#disable(name)
+  endfor
 endfunction
 
 function! SpaceVim#plugins#get(...) abort
@@ -109,41 +103,9 @@ function! SpaceVim#plugins#get(...) abort
 endfunction
 
 function! s:install_manager() abort
-  " Fsep && Psep
-  if has('win16') || has('win32') || has('win64')
-    let s:Psep = ';'
-    let s:Fsep = '\'
-  else
-    let s:Psep = ':'
-    let s:Fsep = '/'
-  endif
   " auto install plugin manager
-  if g:spacevim_plugin_manager ==# 'neobundle'
-    let g:_spacevim_neobundle_installed = 1
-    let &rtp .= ',' . g:_spacevim_root_dir . 'bundle/neobundle.vim/'
-  elseif g:spacevim_plugin_manager ==# 'dein'
-    let g:_spacevim_dein_installed = 1
-    let &rtp .= ',' . g:_spacevim_root_dir . 'bundle/dein.vim/'
-  elseif g:spacevim_plugin_manager ==# 'vim-plug'
-    "auto install vim-plug
-    if filereadable(expand(g:spacevim_data_dir.'vim-plug/autoload/plug.vim'))
-      let g:_spacevim_vim_plug_installed = 1
-    else
-      if executable('curl')
-        exec '!curl -fLo '
-              \ . g:spacevim_data_dir.'vim-plug/autoload/plug.vim'
-              \ . ' --create-dirs '
-              \ . 'https://raw.githubusercontent.com/'
-              \ . 'junegunn/vim-plug/master/plug.vim'
-        let g:_spacevim_vim_plug_installed = 1
-      else
-        echohl WarningMsg
-        echom 'You need install curl!'
-        echohl None
-      endif
-    endif
-    let &rtp .= ',' . g:spacevim_data_dir.'vim-plug/'
-  endif
+  let g:_spacevim_dein_installed = 1
+  let &rtp .= ',' . g:_spacevim_root_dir . 'bundle/dein.vim/'
 endf
 
 call s:install_manager()
@@ -157,58 +119,30 @@ let g:unite_source_menu_menus =
         \ 'All the Added plugins'
         \ . '                    <Leader>fp'}
   let g:unite_source_menu_menus.AddedPlugins.command_candidates = []
-  if g:spacevim_plugin_manager ==# 'neobundle'
-    call neobundle#begin(a:path)
-  elseif g:spacevim_plugin_manager ==# 'dein'
-    call dein#begin(a:path)
-  elseif g:spacevim_plugin_manager ==# 'vim-plug'
-    call plug#begin(a:path)
-  endif
+  call dein#begin(a:path)
 endfunction
 
 function! SpaceVim#plugins#end() abort
-  if g:spacevim_plugin_manager ==# 'neobundle'
-    call neobundle#end()
-    if g:spacevim_checkinstall == 1
-      silent! let g:_spacevim_checking_flag = neobundle#exists_not_installed_bundles()
-      if g:_spacevim_checking_flag
-        augroup SpaceVimCheckInstall
-          au!
-          au VimEnter * SPInstall
-        augroup END
-      endif
+  call dein#end()
+  " dein do not include the after dir of SpaceVim by default
+  let &rtp .= ',' . g:_spacevim_root_dir . 'after'
+  if g:spacevim_checkinstall == 1
+    silent! let g:_spacevim_checking_flag = dein#check_install()
+    if g:_spacevim_checking_flag
+      augroup SpaceVimCheckInstall
+        au!
+        au VimEnter * SPInstall
+      augroup END
     endif
-  elseif g:spacevim_plugin_manager ==# 'dein'
-    call dein#end()
-    " dein do not include the after dir of SpaceVim by default
-    let &rtp .= ',' . g:_spacevim_root_dir . 'after'
-    if g:spacevim_checkinstall == 1
-      silent! let g:_spacevim_checking_flag = dein#check_install()
-      if g:_spacevim_checking_flag
-        augroup SpaceVimCheckInstall
-          au!
-          au VimEnter * SPInstall
-        augroup END
-      endif
-    endif
-    call dein#call_hook('source')
-  elseif g:spacevim_plugin_manager ==# 'vim-plug'
-    call plug#end()
   endif
+  call dein#call_hook('source')
 endfunction
 
 function! SpaceVim#plugins#defind_hooks(bundle) abort
-  if g:spacevim_plugin_manager ==# 'neobundle'
-    let s:hooks = neobundle#get_hooks(a:bundle)
-    func! s:hooks.on_source(bundle) abort
-      call SpaceVim#util#loadConfig('plugins/' . split(a:bundle['name'],'\.')[0] . '.vim')
-    endf
-  elseif g:spacevim_plugin_manager ==# 'dein'
-     " call SpaceVim#logger#debug('plugin name is ' .  g:dein#name)
-    call dein#config(g:dein#name, {
-          \ 'hook_source' : "call SpaceVim#util#loadConfig('plugins/" . s:get_config_name(g:dein#name) . "')"
-          \ })
-  endif
+   " call SpaceVim#logger#debug('plugin name is ' .  g:dein#name)
+  call dein#config(g:dein#name, {
+        \ 'hook_source' : "call SpaceVim#util#loadConfig('plugins/" . s:get_config_name(g:dein#name) . "')"
+        \ })
 endfunction
 
 
@@ -227,11 +161,7 @@ endfunction
 
 
 function! SpaceVim#plugins#fetch() abort
-  if g:spacevim_plugin_manager ==# 'neobundle'
-    NeoBundleFetch g:_spacevim_root_dir . 'bundle/neobundle.vim'
-  elseif g:spacevim_plugin_manager ==# 'dein'
-    call dein#add(g:_spacevim_root_dir . 'bundle/dein.vim', { 'merged' : 0})
-  endif
+  call dein#add(g:_spacevim_root_dir . 'bundle/dein.vim', { 'merged' : 0})
 endfunction
 
 let s:plugins = []
@@ -246,25 +176,13 @@ endf
 let g:_spacevim_plugins = []
 function! SpaceVim#plugins#add(repo,...) abort
   let g:spacevim_plugin_name = ''
-  if g:spacevim_plugin_manager ==# 'neobundle'
-    exec 'NeoBundle "'.a:repo.'"'.','.join(a:000,',')
-    let g:spacevim_plugin_name = split(a:repo, '/')[-1]
-  elseif g:spacevim_plugin_manager ==# 'dein'
-    if len(a:000) > 0
-      call dein#add(a:repo,s:parser(a:repo, a:000[0]))
-    else
-      call dein#add(a:repo)
-    endif
-    let g:spacevim_plugin_name = g:dein#name
-    call add(g:_spacevim_plugins, g:dein#name)
-  elseif g:spacevim_plugin_manager ==# 'vim-plug'
-    if len(a:000) > 0
-      exec "Plug '".a:repo."', ".join(a:000,',')
-    else
-      exec "Plug '".a:repo."'"
-    endif
-    let g:spacevim_plugin_name = split(a:repo, '/')[-1]
+  if len(a:000) > 0
+    call dein#add(a:repo,s:parser(a:repo, a:000[0]))
+  else
+    call dein#add(a:repo)
   endif
+  let g:spacevim_plugin_name = g:dein#name
+  call add(g:_spacevim_plugins, g:dein#name)
   let str = get(g:,'_spacevim_plugin_layer', 'custom plugin')
   let str = '[' . str . ']'
   let str = str . repeat(' ', 25 - len(str))
@@ -281,17 +199,11 @@ function! SpaceVim#plugins#add(repo,...) abort
 endfunction
 
 function! SpaceVim#plugins#tap(plugin) abort
-  if g:spacevim_plugin_manager ==# 'neobundle'
-    return neobundle#tap(a:plugin)
-  elseif g:spacevim_plugin_manager ==# 'dein'
-    return dein#tap(a:plugin)
-  endif
+  return dein#tap(a:plugin)
 endfunction
 
 function! SpaceVim#plugins#enable_plug() abort
-  return g:_spacevim_neobundle_installed
-        \ || g:_spacevim_dein_installed
-        \ || g:_spacevim_vim_plug_installed
+  return g:_spacevim_dein_installed
 endfunction
 
 function! SpaceVim#plugins#loadPluginBefore(plugin) abort

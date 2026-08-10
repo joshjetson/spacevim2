@@ -81,11 +81,7 @@ endfunction
 " @vimlint(EVL103, 1, a:CmdLine)
 " @vimlint(EVL103, 1, a:CursorPos)
 function! SpaceVim#commands#complete_plugin(ArgLead, CmdLine, CursorPos) abort
-  if g:spacevim_plugin_manager ==# 'dein'
-    return join(keys(dein#get()) + ['SpaceVim'], "\n")
-  elseif g:spacevim_plugin_manager ==# 'neobundle'
-    return join(map(neobundle#config#get_neobundles(), 'v:val.name'), "\n")
-  endif
+  return join(keys(dein#get()) + ['SpaceVim'], "\n")
 endfunction
 " @vimlint(EVL103, 0, a:ArgLead)
 " @vimlint(EVL103, 0, a:CmdLine)
@@ -120,55 +116,27 @@ function! SpaceVim#commands#config(...) abort
 endfunction
 
 function! SpaceVim#commands#update_plugin(...) abort
-  if g:spacevim_plugin_manager ==# 'neobundle'
-    if a:0 == 0
-      call SpaceVim#plugins#manager#update()
-    else
-      call SpaceVim#plugins#manager#update(a:000)
-    endif
-  elseif g:spacevim_plugin_manager ==# 'dein'
-    if a:0 == 0
-      call SpaceVim#plugins#manager#update()
-    else
-      call SpaceVim#plugins#manager#update(a:000)
-    endif
-  elseif g:spacevim_plugin_manager ==# 'vim-plug'
+  if a:0 == 0
+    call SpaceVim#plugins#manager#update()
+  else
+    call SpaceVim#plugins#manager#update(a:000)
   endif
 endfunction
 
 function! SpaceVim#commands#reinstall_plugin(...) abort
-  if g:spacevim_plugin_manager ==# 'dein'
-    call SpaceVim#plugins#manager#reinstall(a:000)
-  elseif g:spacevim_plugin_manager ==# 'neobundle'
-  elseif g:spacevim_plugin_manager ==# 'vim-plug'
-  endif
+  call SpaceVim#plugins#manager#reinstall(a:000)
 endfunction
 
 function! SpaceVim#commands#clean_plugin() abort
-  if g:spacevim_plugin_manager ==# 'dein'
-    call map(dein#check_clean(), "delete(v:val, 'rf')")
-    call dein#recache_runtimepath()
-  elseif g:spacevim_plugin_manager ==# 'neobundle'
-    " @todo add SPClean support for neobundle
-  elseif g:spacevim_plugin_manager ==# 'vim-plug'
-    " @todo add SPClean support for vim-plug
-  endif
+  call map(dein#check_clean(), "delete(v:val, 'rf')")
+  call dein#recache_runtimepath()
 endfunction
 
 function! SpaceVim#commands#install_plugin(...) abort
-  if g:spacevim_plugin_manager ==# 'neobundle'
-    if a:0 == 0
-      call SpaceVim#plugins#manager#install()
-    else
-      call SpaceVim#plugins#manager#install(a:000)
-    endif
-  elseif g:spacevim_plugin_manager ==# 'dein'
-    if a:0 == 0
-      call SpaceVim#plugins#manager#install()
-    else
-      call SpaceVim#plugins#manager#install(a:000)
-    endif
-  elseif g:spacevim_plugin_manager ==# 'vim-plug'
+  if a:0 == 0
+    call SpaceVim#plugins#manager#install()
+  else
+    call SpaceVim#plugins#manager#install(a:000)
   endif
 endfunction
 

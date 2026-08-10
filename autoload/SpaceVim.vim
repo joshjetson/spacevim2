@@ -1034,14 +1034,8 @@ let g:spacevim_filetree_direction             = 'right'
 
 let g:spacevim_sidebar_direction        = ''
 ""
-" The default plugin manager of SpaceVim.
-" if has patch 7.4.2071, the default value is dein. Otherwise it is neobundle.
-" Options are dein, neobundle, or vim-plug.
-if has('patch-7.4.2071')
-  let g:spacevim_plugin_manager          = 'dein'
-else
-  let g:spacevim_plugin_manager          = 'neobundle'
-endif
+" The plugin manager of SpaceVim. SpaceVim uses dein.vim.
+let g:spacevim_plugin_manager = 'dein'
 
 ""
 " @section plugin_manager_processes, options-plugin_manager_processes
@@ -1546,9 +1540,7 @@ let g:_spacevim_mappings_leader_custom = []
 let g:_spacevim_mappings_leader_custom_group_name = []
 let g:_spacevim_mappings_language_specified_space_custom = {}
 let g:_spacevim_mappings_lang_group_name = {}
-let g:_spacevim_neobundle_installed     = 0
 let g:_spacevim_dein_installed          = 0
-let g:_spacevim_vim_plug_installed      = 0
 
 if !exists('g:leaderGuide_vertical')
   let g:leaderGuide_vertical = 0
