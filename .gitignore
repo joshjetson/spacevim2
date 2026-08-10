@@ -55,3 +55,7 @@ bundle/vim-javacomplete2/libs/javavi/.settings/org.eclipse.core.resources.prefs
 bundle/vim-javacomplete2/libs/javavi/.settings/org.eclipse.jdt.apt.core.prefs
 bundle/vim-javacomplete2/libs/javavi/.settings/org.eclipse.jdt.core.prefs
 bundle/vim-javacomplete2/libs/javavi/.settings/org.eclipse.m2e.core.prefs
+
+# --- spacevim2 local dev docs (untracked, not part of the framework) ---
+/WORKING.md
+/COMPLETED.md
