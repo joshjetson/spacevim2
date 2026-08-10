@@ -1020,8 +1020,8 @@ let g:spacevim_keep_server_alive = 1
 " The colorscheme of SpaceVim. Default is 'gruvbox'.
 
 ""
-" The colorscheme of SpaceVim. Default is 'gruvbox'.
-let g:spacevim_colorscheme             = 'gruvbox'
+" The colorscheme of SpaceVim. Default is 'SpaceVim'.
+let g:spacevim_colorscheme             = 'SpaceVim'
 ""
 " @section colorscheme_bg, options-colorscheme_bg
 " @parentsection options
