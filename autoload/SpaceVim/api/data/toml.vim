@@ -37,7 +37,12 @@ endfunction
 "
 " private api
 "
-let s:skip_pattern = '\C^\%(\%(\s\|\r\?\n\)\+\|#[^\r\n]*\)'
+" NOTE: the comment branch uses a lazy `.\{-}` bounded by `\ze\%(\r\?\n\|$\)`
+" instead of `#[^\r\n]*`. In a `[]` collection `\n` is the end-of-line atom, and
+" on the old/default regex engine a negated class like `[^\r\n]` wrongly matches
+" across newlines, so a leading comment would swallow the whole file (parse
+" returns `{}`). The lazy form stops at the first line end on every engine.
+let s:skip_pattern = '\C^\%(\%(\s\|\r\?\n\)\+\|#.\{-}\ze\%(\r\?\n\|$\)\)'
 let s:bare_key_pattern = '\%([A-Za-z0-9_-]\+\)'
 
 function! s:_skip(input) abort
