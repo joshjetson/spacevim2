@@ -9,7 +9,7 @@
 ""
 " @section colorscheme, layers-colorscheme
 " @parentsection layers
-" The default colorscheme of SpaceVim is gruvbox. It can be changed via
+" The default colorscheme of SpaceVim is SpaceVim. It can be changed via
 " `colorscheme` option by adding the following code to @section(options) file:
 " >
 " [options]
@@ -33,7 +33,7 @@
 "   | hybrid       | yes  | yes   | yes  | yes | yes        |
 "   | material     | yes  | yes   | yes  | yes | yes        |
 "   | dracula      | yes  | yes   | yes  | yes | yes        |
-"   | SpaceVim     | yes  | yes   | yes  | yes | yes        |
+"   | SpaceVim     | yes  | no    | yes  | yes | yes        |
 " <
 " Also, there's one thing which everyone should know and pay attention to.
 " NOT all of above colorschemes support spell check very well. For example,
@@ -75,6 +75,7 @@ function! SpaceVim#layers#colorscheme#plugins() abort
 endfunction
 
 let s:cs = [
+      \ 'SpaceVim',
       \ 'gruvbox',
       \ 'molokai',
       \ 'onedark',
@@ -85,6 +86,8 @@ let s:cs = [
       \ 'NeoSolarized',
       \ 'material',
       \ 'srcery',
+      \ 'dracula',
+      \ 'palenight',
       \ ]
 let s:NUMBER = SpaceVim#api#import('data#number')
 
