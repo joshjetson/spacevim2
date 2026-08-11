@@ -5,6 +5,6 @@ Execute ( SpaceVim lua api: data#toml ):
   endif
   let cmp = SpaceVim#api#import('vim#compatible')
   lua sp_toml = require('spacevim.api').import('data.toml')
-  AssertEqual cmp.luaeval("sp_toml.parse_file('mode/basic.toml').options.colorscheme"), 'gruvbox'
+  AssertEqual cmp.luaeval("sp_toml.parse_file('mode/basic.toml').options.colorscheme"), 'SpaceVim'
 
 

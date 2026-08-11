@@ -8,10 +8,11 @@
 
 # All SpaceVim option below [option] section
 [options]
-    # set spacevim theme. by default colorscheme layer is not loaded,
-    # if you want to use more colorscheme, please load the colorscheme
-    # layer
-    colorscheme = "gruvbox"
+    # The colorscheme. "SpaceVim" is the built-in default theme; change this
+    # single line to switch (e.g. "gruvbox", "onedark", "nord"). Themes other
+    # than SpaceVim/gruvbox come from the colorscheme layer -- add it under
+    # [[layers]] below (name = "colorscheme") to make more themes available.
+    colorscheme = "SpaceVim"
     colorscheme_bg = "dark"
     # Disable guicolors in basic mode, many terminal do not support 24bit
     # true colors
