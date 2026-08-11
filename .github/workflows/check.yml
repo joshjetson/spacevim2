@@ -11,7 +11,7 @@ jobs:
               - vimbin: vim
                 vimtag: v8.2.3995
               - vimbin: vim
-                vimtag: nightly
+                vimtag: v9.1.0000
               - vimbin: nvim
                 vimtag: nightly
               - vimbin: nvim
