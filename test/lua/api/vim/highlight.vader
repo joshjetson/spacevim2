@@ -1,0 +1,46 @@
+" vim<->nvim PARITY twin (lua side) for the vim#highlight API.
+"
+" The vim-side surface is verified by test/api/vim/highlight.vader (runs on BOTH
+" editors, exercises autoload/SpaceVim/api/vim/highlight.vim). THIS file exercises
+" the lua port (lua/spacevim/api/vim/highlight.lua) on nvim and asserts the SAME
+" expected values, locking the two group2dict() implementations to identical
+" output. It self-skips on vim (Log skip + finish), so it only asserts on nvim.
+"
+" PARITY: the lua port's group2dict() returns exactly the fields the vim test
+" checks -- name/ctermbg/ctermfg/bold/italic/reverse/underline/guibg/guifg -- and
+" lower-cases guibg/guifg (via vim.fn.tolower on synIDattr 'bg#'/'fg#'), matching
+" the vimscript source. Every assertion below mirrors test/api/vim/highlight.vader
+" EXACTLY, including the `!empty(guifg)` guard around the gui-color asserts (the
+" vim test guards them the same way, because a headless/no-gui session can report
+" empty gui colors; ctermfg and the unknown-group asserts always run).
+
+Execute ( SpaceVim lua api: vim#highlight group2dict ):
+  if !has('nvim-0.7.2')
+    Log 'skip lua test'
+    finish
+  endif
+  let cmp = SpaceVim#api#import('vim#compatible')
+  lua spacevim_hi = require('spacevim.api').import('vim.highlight')
+  highlight TestAPIVimHighlight ctermfg=11 guifg=#89DDFF guibg=#212121
+  lua spacevim_hi_dict = spacevim_hi.group2dict('TestAPIVimHighlight')
+  " Mirrors the vim test: only assert the gui colors when guifg is non-empty.
+  if !empty(cmp.luaeval('spacevim_hi_dict.guifg'))
+    Log 'lua guibg is: ' . cmp.luaeval('spacevim_hi_dict.guibg')
+    Log 'lua guifg is: ' . cmp.luaeval('spacevim_hi_dict.guifg')
+    AssertEqual cmp.luaeval('spacevim_hi_dict.guibg'), '#212121'
+    AssertEqual cmp.luaeval('spacevim_hi_dict.guifg'), '#89ddff'
+  endif
+  AssertEqual cmp.luaeval('spacevim_hi_dict.ctermfg'), '11'
+
+  " Unknown group: the lua port returns the all-empty dict (hlID == 0 branch),
+  " same keys/values the vim test asserts for 'UnknownHighlightGroup'.
+  lua spacevim_hi_unknown = spacevim_hi.group2dict('UnknownHighlightGroup')
+  AssertEqual cmp.luaeval('spacevim_hi_unknown.name'), ''
+  AssertEqual cmp.luaeval('spacevim_hi_unknown.ctermbg'), ''
+  AssertEqual cmp.luaeval('spacevim_hi_unknown.ctermfg'), ''
+  AssertEqual cmp.luaeval('spacevim_hi_unknown.bold'), ''
+  AssertEqual cmp.luaeval('spacevim_hi_unknown.italic'), ''
+  AssertEqual cmp.luaeval('spacevim_hi_unknown.reverse'), ''
+  AssertEqual cmp.luaeval('spacevim_hi_unknown.underline'), ''
+  AssertEqual cmp.luaeval('spacevim_hi_unknown.guibg'), ''
+  AssertEqual cmp.luaeval('spacevim_hi_unknown.guifg'), ''
