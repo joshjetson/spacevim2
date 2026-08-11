@@ -42,16 +42,10 @@ endfunction
 " color palette
 
 
-let s:fg = 249
 let s:bg = 235
-let s:bg = max([s:bg, 233])
-
-let s:bias = s:bg - 235
 let s:bg0 = s:bg - 1
 let s:bg1 = s:bg + 1
-let s:bg2 = s:bg + 2
 let s:bg3 = s:bg + 3
-let s:bg4 = s:bg + 4
 
 
 let s:palette = {
@@ -89,7 +83,7 @@ let s:palette = {
       \ ['Keyword'          , 68  , ''  , 'bold'      , 'bold']      ,
       \ ['Label'            , 104 , ''  , 'None'      , 'None']      ,
       \ ['Macro'            , 140 , ''  , 'None'      , 'None']      ,
-      \ ['MatchParen'       , 40  , 234 , 'bold       , underline'   , 'bold , underline'] ,
+      \ ['MatchParen'       , 40  , 234 , 'bold,underline' , 'bold,underline'] ,
       \ ['ModeMsg'          , 229 , ''  , 'None'      , 'None']      ,
       \ ['NonText'          , 241 , ''  , 'None'      , 'None']      ,
       \ ['Number'           , 176 , ''  , 'None'      , 'None']      ,
@@ -128,7 +122,6 @@ let s:palette = {
       \ ['Todo'             , 172 , 235 , 'bold'      , 'bold']      ,
       \ ['Type'             , 68  , ''  , 'None'      , 'None']      ,
       \ ['Typedef'          , 68  , ''  , 'None'      , 'None']      ,
-      \ ['VertSplit'        , 234 , ''  , 'None'      , 'None']      ,
       \ ['Visual'           , ''  , s:bg3 , 'None'      , 'None']      ,
       \ ['VisualNOS'        , ''  , s:bg3 , 'None'      , 'None']      ,
       \ ['Warning'          , 136 , ''  , 'bold'      , 'bold']      ,
