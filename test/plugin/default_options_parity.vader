@@ -1,0 +1,53 @@
+" vim<->nvim PARITY test for the default#options module.
+"
+" Dispatch mirrors autoload/SpaceVim.vim: on nvim>=0.7 the lua port
+" (lua/spacevim/default.lua) runs; on vim the vimscript source of truth
+" (autoload/SpaceVim/default.vim) runs. Asserting identical option values on
+" BOTH editors locks the two implementations together, so any future drift in
+" the set of options default#options() applies will fail on one gate.
+"
+" Only options that BOTH implementations set to the same value are asserted
+" (e.g. lua-only `shada` and vim-only `smartindent`/`cindent`/`belloff` are
+" deliberately excluded).
+
+Execute ( SpaceVim default#options parity: vim<->nvim option values ):
+  " Point the data dir at a throwaway location so option init does not touch
+  " the real ~/.cache and stays deterministic across editors.
+  let g:spacevim_data_dir = fnamemodify('build/.parity-data/', ':p')
+
+  if has('nvim-0.7')
+    lua require('spacevim.default').options()
+  else
+    call SpaceVim#default#options()
+  endif
+
+  AssertEqual &backspace, 'indent,eol,start'
+  AssertEqual &laststatus, 2
+  AssertEqual &showcmd, 0
+  AssertEqual &autoindent, 1
+  AssertEqual &linebreak, 1
+  AssertEqual &wildmenu, 1
+  AssertEqual &number, 1
+  AssertEqual &autoread, 1
+  AssertEqual &backup, 1
+  AssertEqual &undofile, 1
+  AssertEqual &undolevels, 1000
+  AssertEqual &writebackup, 0
+  AssertEqual &matchtime, 0
+  AssertEqual &ruler, 0
+  AssertEqual &showmatch, 1
+  AssertEqual &showmode, 1
+  AssertEqual &completeopt, 'menu,menuone,longest'
+  AssertEqual &complete, '.,w,b,u,t'
+  AssertEqual &pumheight, 15
+  AssertEqual &scrolloff, 1
+  AssertEqual &sidescrolloff, 5
+  AssertEqual &incsearch, 1
+  AssertEqual &hlsearch, 1
+  AssertEqual &wildignorecase, 1
+  AssertEqual &mouse, 'nv'
+  AssertEqual &hidden, 1
+  AssertEqual &ttimeout, 1
+  AssertEqual &ttimeoutlen, 50
+  AssertEqual &wrap, 0
+  AssertEqual &foldtext, 'SpaceVim#default#Customfoldtext()'

@@ -1,0 +1,31 @@
+" vim<->nvim PARITY test for the autocmds module.
+"
+" autoload/SpaceVim/autocmds.vim is a hybrid: on nvim>=0.10
+" SpaceVim#autocmds#init() first calls lua require('spacevim.autocmds').init()
+" and then defines a trimmed `SpaceVim_core` augroup in vimscript; on vim the
+" whole `SpaceVim_core` augroup is built in vimscript.
+"
+" The set of autocmds that MUST live in the `SpaceVim_core` augroup on BOTH
+" editors is asserted here. The lua-only lowercase `spacevim_core` augroup and
+" the many vim-only members are deliberately not asserted -- only the shared
+" contract of the mixed-case `SpaceVim_core` group is locked.
+
+Execute ( SpaceVim autocmds#init parity: SpaceVim_core augroup ):
+  " These globals are read by the vim-path init() while defining the augroup;
+  " set them to their SpaceVim defaults so init() does not raise E121 and both
+  " editors take equivalent branches.
+  let g:spacevim_relativenumber = 1
+  let g:spacevim_enable_cursorline = 1
+  let g:spacevim_enable_cursorcolumn = 0
+  let g:spacevim_auto_disable_touchpad = 1
+
+  call SpaceVim#autocmds#init()
+
+  " The mixed-case augroup is created on both editors.
+  AssertEqual exists('#SpaceVim_core'), 1
+  " `autocmd BufWinEnter quickfix ...` is defined in SpaceVim_core on both.
+  AssertEqual exists('#SpaceVim_core#BufWinEnter#quickfix'), 1
+  " The colorscheme fixup autocmd is registered for the gruvbox pattern in
+  " SpaceVim_core on both editors (a comma-separated pattern list is stored as
+  " one entry per pattern, so a single member is checked).
+  AssertEqual exists('#SpaceVim_core#ColorScheme#gruvbox'), 1

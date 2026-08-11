@@ -1,0 +1,23 @@
+" vim<->nvim PARITY test for the statusline module.
+"
+" On nvim>=0.10 SpaceVim#layers#core#statusline#mode_text() dispatches to
+" v:lua.require('spacevim.plugin.statusline').mode_text(); on vim it runs the
+" vimscript implementation in autoload/SpaceVim/layers/core/statusline.vim.
+"
+" mode_text() is a pure mode-name -> label lookup. With 'paste' off and no
+" iedit mode active it is fully deterministic and editor-independent, so the
+" mapping is a genuine parity lock. The full stateful get() is intentionally
+" NOT tested here (it depends on window/mode/plugin state that cannot be made
+" identical across editors).
+
+Execute ( SpaceVim statusline#mode_text parity: mode -> label ):
+  set nopaste
+  unlet! w:spacevim_iedit_mode
+
+  AssertEqual SpaceVim#layers#core#statusline#mode_text('n'), ' NORMAL'
+  AssertEqual SpaceVim#layers#core#statusline#mode_text('i'), ' INSERT'
+  AssertEqual SpaceVim#layers#core#statusline#mode_text('R'), 'REPLACE'
+  AssertEqual SpaceVim#layers#core#statusline#mode_text('v'), ' VISUAL'
+  AssertEqual SpaceVim#layers#core#statusline#mode_text('V'), ' V-LINE'
+  AssertEqual SpaceVim#layers#core#statusline#mode_text('c'), 'COMMAND'
+  AssertEqual SpaceVim#layers#core#statusline#mode_text('t'), '   TERM'
