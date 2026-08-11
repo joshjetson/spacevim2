@@ -26,17 +26,25 @@ let s:COLOR = SpaceVim#api#import('color')
 let s:is_dark=(&background ==# 'dark')
 
 function! s:hi(item, fg, bg, cterm, gui) abort
-  call s:HIAPI.hi(
-        \ {
+  let l:info = {
         \ 'name' : a:item,
         \ 'ctermbg' : a:bg,
         \ 'ctermfg' : a:fg,
         \ 'guifg' : s:COLOR.nr2str(a:fg),
         \ 'guibg' : s:COLOR.nr2str(a:bg),
-        \ 'cterm' : a:cterm,
-        \ 'gui' : a:gui,
         \ }
-        \ )
+  " a:cterm / a:gui are style strings ('bold', 'italic', 'bold,underline',
+  " 'None', ...). The highlight API honors explicit bold/italic/underline/reverse
+  " keys (value '1'), NOT a 'gui'/'cterm' string -- so without translating, every
+  " style in this theme is silently dropped (no italic comments, no bold
+  " functions, etc.). Translate the supported styles here.
+  let l:styles = a:cterm . ',' . a:gui
+  for l:sty in ['bold', 'italic', 'underline', 'reverse']
+    if l:styles =~# '\<' . l:sty . '\>'
+      let l:info[l:sty] = '1'
+    endif
+  endfor
+  call s:HIAPI.hi(l:info)
 endfunction
 
 " color palette

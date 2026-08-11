@@ -15,12 +15,10 @@
 " lowercase while vim echoes back the literal string handed to `hi!`. cterm
 " numbers are compared exactly.
 "
-" NOTE: the palette's italic/bold style flags are deliberately NOT asserted. The
-" colorscheme passes them via a 'gui'/'cterm' STRING key, but the highlight API
-" (autoload/SpaceVim/api/vim/highlight.vim:65) only honors explicit
-" bold/italic/underline/reverse keys, so styles resolve to '' on BOTH editors --
-" that is shared (if lossy) behavior, not a color. The colors are the parity
-" surface here, and they are identical on both editors.
+" Text styles (bold/italic/underline) ARE asserted too: the colorscheme's s:hi
+" translates the palette's style strings into the explicit style keys the
+" highlight API honors, so Comment is italic, Function/Keyword are bold, and
+" MatchParen is bold+underline -- identically on both editors.
 
 Execute ( SpaceVim colors/SpaceVim.vim parity: resolved buffer highlight colors ):
   " termguicolors is REQUIRED: colors/SpaceVim.vim:17 finishes early (leaving the
@@ -75,3 +73,11 @@ Execute ( SpaceVim colors/SpaceVim.vim parity: resolved buffer highlight colors 
   AssertEqual synIDattr(hlID('CursorLineNr'), 'fg', 'cterm'), '170'
   AssertEqual tolower(synIDattr(hlID('CursorLineNr'), 'bg#', 'gui')), '#1c1c1c'
   AssertEqual synIDattr(hlID('CursorLineNr'), 'bg', 'cterm'), '234'
+
+  " ---- text styles (must apply identically on both editors) ----
+  AssertEqual synIDattr(hlID('Comment'), 'italic'), '1'
+  AssertEqual synIDattr(hlID('Function'), 'bold'), '1'
+  AssertEqual synIDattr(hlID('Keyword'), 'bold'), '1'
+  AssertEqual synIDattr(hlID('MatchParen'), 'bold'), '1'
+  AssertEqual synIDattr(hlID('MatchParen'), 'underline'), '1'
+  AssertEqual synIDattr(hlID('Normal'), 'bold'), ''
