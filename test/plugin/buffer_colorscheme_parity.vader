@@ -1,0 +1,77 @@
+" vim<->nvim PARITY test for the SpaceVim buffer colorscheme (colors/SpaceVim.vim).
+"
+" colors/SpaceVim.vim is a SINGLE file loaded verbatim by BOTH editors -- it has
+" no has('nvim') branch. It builds every buffer highlight group from one palette
+" (s:palette.dark), pushing each row through the shared highlight API
+" (SpaceVim#api#import('vim#highlight').hi), which derives the gui hex from the
+" cterm color number via SpaceVim#api#import('color').nr2str.
+"
+" Asserting the RESOLVED colors of key groups on BOTH editors locks the palette
+" AND the color API together: if anyone later forks the colorscheme behind an
+" has('nvim') branch, or the nr2str 256-color table drifts, one gate goes red.
+"
+" gui hex is compared case-insensitively (tolower) for the same reason as
+" statusline_colors_parity.vader: nvim canonicalizes nvim_set_hl colors to
+" lowercase while vim echoes back the literal string handed to `hi!`. cterm
+" numbers are compared exactly.
+"
+" NOTE: the palette's italic/bold style flags are deliberately NOT asserted. The
+" colorscheme passes them via a 'gui'/'cterm' STRING key, but the highlight API
+" (autoload/SpaceVim/api/vim/highlight.vim:65) only honors explicit
+" bold/italic/underline/reverse keys, so styles resolve to '' on BOTH editors --
+" that is shared (if lossy) behavior, not a color. The colors are the parity
+" surface here, and they are identical on both editors.
+
+Execute ( SpaceVim colors/SpaceVim.vim parity: resolved buffer highlight colors ):
+  " termguicolors is REQUIRED: colors/SpaceVim.vim:17 finishes early (leaving the
+  " groups unset) unless termguicolors / gui / 256-color. background=dark must be
+  " set BEFORE :colorscheme because the file snapshots &background into s:is_dark
+  " at source time to choose the dark palette.
+  set termguicolors
+  set background=dark
+  colorscheme SpaceVim
+
+  " Palette rows asserted below (cterm number -> nr2str gui hex):
+  "   Normal       fg 249 #b2b2b2  bg 235 #262626
+  "   LineNr       fg 238 #444444  bg 235 #262626
+  "   Comment      fg 30  #008787  (no bg)
+  "   String       fg 36  #00af87  (no bg)
+  "   Function     fg 169 #d75faf  (no bg)
+  "   Pmenu        fg 141 #af87ff  bg 236 #303030  (s:bg1 = s:bg + 1)
+  "   CursorLineNr fg 170 #d75fd7  bg 234 #1c1c1c  (s:bg0 = s:bg - 1)
+
+  " ---- Normal ----
+  AssertEqual tolower(synIDattr(hlID('Normal'), 'fg#', 'gui')), '#b2b2b2'
+  AssertEqual synIDattr(hlID('Normal'), 'fg', 'cterm'), '249'
+  AssertEqual tolower(synIDattr(hlID('Normal'), 'bg#', 'gui')), '#262626'
+  AssertEqual synIDattr(hlID('Normal'), 'bg', 'cterm'), '235'
+
+  " ---- LineNr ----
+  AssertEqual tolower(synIDattr(hlID('LineNr'), 'fg#', 'gui')), '#444444'
+  AssertEqual synIDattr(hlID('LineNr'), 'fg', 'cterm'), '238'
+  AssertEqual tolower(synIDattr(hlID('LineNr'), 'bg#', 'gui')), '#262626'
+  AssertEqual synIDattr(hlID('LineNr'), 'bg', 'cterm'), '235'
+
+  " ---- Comment (fg only) ----
+  AssertEqual tolower(synIDattr(hlID('Comment'), 'fg#', 'gui')), '#008787'
+  AssertEqual synIDattr(hlID('Comment'), 'fg', 'cterm'), '30'
+
+  " ---- String (fg only) ----
+  AssertEqual tolower(synIDattr(hlID('String'), 'fg#', 'gui')), '#00af87'
+  AssertEqual synIDattr(hlID('String'), 'fg', 'cterm'), '36'
+
+  " ---- Function (fg only) ----
+  AssertEqual tolower(synIDattr(hlID('Function'), 'fg#', 'gui')), '#d75faf'
+  AssertEqual synIDattr(hlID('Function'), 'fg', 'cterm'), '169'
+
+  " ---- Pmenu ----
+  AssertEqual tolower(synIDattr(hlID('Pmenu'), 'fg#', 'gui')), '#af87ff'
+  AssertEqual synIDattr(hlID('Pmenu'), 'fg', 'cterm'), '141'
+  AssertEqual tolower(synIDattr(hlID('Pmenu'), 'bg#', 'gui')), '#303030'
+  AssertEqual synIDattr(hlID('Pmenu'), 'bg', 'cterm'), '236'
+
+  " ---- CursorLineNr ----
+  AssertEqual tolower(synIDattr(hlID('CursorLineNr'), 'fg#', 'gui')), '#d75fd7'
+  AssertEqual synIDattr(hlID('CursorLineNr'), 'fg', 'cterm'), '170'
+  AssertEqual tolower(synIDattr(hlID('CursorLineNr'), 'bg#', 'gui')), '#1c1c1c'
+  AssertEqual synIDattr(hlID('CursorLineNr'), 'bg', 'cterm'), '234'

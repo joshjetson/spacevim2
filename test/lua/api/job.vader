@@ -1,0 +1,38 @@
+" vim<->nvim PARITY twin (lua side) for the job API -- SHARED surface only.
+"
+" The vim-side surface is verified by test/api/job.vader (runs on BOTH editors,
+" exercises autoload/SpaceVim/api/job.vim). THIS file exercises the lua port
+" (lua/spacevim/api/job.lua) on nvim and asserts the SAME core behavior the vim
+" test asserts: start `cat`, send 'foo', and receive 'foo' back on stdout. It
+" self-skips on vim (Log skip + finish), so it only asserts on nvim.
+"
+" PARTIAL by necessity -- the lua port implements only start/send/stop/chanclose:
+"   * job.status()  -- ABSENT in the lua port, so the vim test's
+"                      `AssertEqual job.status(jobid), 'run'` has no lua twin.
+"   * job.vim_job / job.nvim_job -- ABSENT (the vim test branches on them).
+"   * exit code     -- the lua on_exit contract is (id, code, signal) and, when
+"                      the job is killed, reports 0, whereas the vim test's
+"                      on_exit path asserts 1. Different callback contract +
+"                      different value => NOT a shared assertion, so it is not
+"                      mirrored here (asserting it would be manufactured drift).
+" The stdout round-trip IS shared and IS identical, so that is what is locked.
+
+Execute ( SpaceVim lua api: job (shared stdout round-trip) ):
+  if !has('nvim-0.7.2')
+    Log 'skip lua test'
+    finish
+  endif
+  if !executable('cat')
+    Log 'cat not executable'
+    finish
+  endif
+  let cmp = SpaceVim#api#import('vim#compatible')
+  lua spacevim_job = require('spacevim.api').import('job')
+  lua spacevim_job_out = ''
+  lua spacevim_job_id = spacevim_job.start({'cat'}, {on_stdout = function(_, data) spacevim_job_out = table.concat(data, '\n') end})
+  lua spacevim_job.send(spacevim_job_id, 'foo')
+  " Same wait the vim test (test/api/job.vader) uses for the echo to arrive.
+  sleep 2000m
+  " Mirrors the vim test's `AssertEqual stdout, 'foo'`.
+  AssertEqual cmp.luaeval('spacevim_job_out'), 'foo'
+  lua spacevim_job.stop(spacevim_job_id)

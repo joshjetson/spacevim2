@@ -1,0 +1,36 @@
+" vim<->nvim PARITY twin (lua side) for the vim#regex API.
+"
+" The vim-side surface is verified by test/api/vim/regex.vader (runs on BOTH
+" editors, exercises autoload/SpaceVim/api/vim/regex.vim). THIS file exercises
+" the lua port (lua/spacevim/api/vim/regex.lua) and asserts the SAME expected
+" values, so the two implementations are locked to identical output. It self-
+" skips on vim (Log skip + finish), so it only asserts on nvim.
+"
+" The lua parser routes every transform through vim.fn.substitute -- the same
+" regex engine the vimscript source uses -- so parity holds as long as the
+" pattern/replacement string literals match across the two languages. They do.
+"
+" NOTE on the second argument (is_perl): test/api/vim/regex.vader passes 0. In
+" vimscript 0 is FALSY, so the perl branch is skipped. In Lua 0 is TRUTHY, so
+" passing a literal 0 would (wrongly) enter the perl branch and error on these
+" inputs. The semantically-equivalent non-perl call in Lua is `false`; with it
+" the lua port reproduces the vim test's expected values EXACTLY (verified).
+
+Execute ( SpaceVim lua api: vim.regex.parser ):
+  if !has('nvim-0.7.2')
+    Log 'skip lua test'
+    finish
+  endif
+  let cmp = SpaceVim#api#import('vim#compatible')
+  lua spacevim_regex = require('spacevim.api').import('vim.regex')
+  " Expected values mirror test/api/vim/regex.vader exactly.
+  AssertEqual cmp.luaeval('spacevim_regex.parser([=[(?i)abc]=], false)'), '\v\cabc'
+  AssertEqual cmp.luaeval('spacevim_regex.parser([=[(?-i)abc]=], false)'), '\v\Cabc'
+  AssertEqual cmp.luaeval('spacevim_regex.parser([=[(?:exp)]=], false)'), '\v%(exp)'
+  AssertEqual cmp.luaeval('spacevim_regex.parser([=[\a\f\v]=], false)'), '\v%x07%x0C%x0B'
+  AssertEqual cmp.luaeval('spacevim_regex.parser([=[[:word:]]=], false)'), '\v[0-9A-Za-z_]'
+  AssertEqual cmp.luaeval('spacevim_regex.parser([=[\bspace\b]=], false)'), '\v<space>'
+  AssertEqual cmp.luaeval('spacevim_regex.parser([=[\bspace]=], false)'), '\v<space'
+  AssertEqual cmp.luaeval('spacevim_regex.parser([=[space\b]=], false)'), '\vspace>'
+  AssertEqual cmp.luaeval('spacevim_regex.parser([=[if%@&ab]=], false)'), '\vif\%\@\&ab'
+  AssertEqual cmp.luaeval('spacevim_regex.parser([=[(?P<name>exp)]=], false)'), '\v(exp)'
