@@ -34,6 +34,17 @@ what packages to install.
 > website now redirects to a maintenance notice). SpaceVim2 will grow its
 > own docs over time; the in-editor help (`:h SpaceVim`) ships in this repo.
 
+## Install
+
+```sh
+curl -sLf https://raw.githubusercontent.com/joshjetson/spacevim2/master/install.sh | bash
+```
+
+The bootstrap script clones SpaceVim2 into `~/.SpaceVim` and wires up Vim/Neovim.
+Target one editor with `--install vim` / `--install neovim`, or remove everything
+with `--uninstall`; run `bash install.sh -h` for all options. (It's served from
+GitHub, not the retired `spacevim.org`.)
+
 ## Features
 
 - **Modularization:** plugins and functions are organized in [layers](https://github.com/SpaceVim/SpaceVim/blob/master/docs/layers.md).
