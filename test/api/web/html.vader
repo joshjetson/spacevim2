@@ -1,4 +1,8 @@
-Execute (Test web#http api):
+Execute (web#html: parse a static fixture and read the <title>):
+    " Parse a fixed HTML string rather than fetching a live website. The old
+    " test hit https://spacevim.org, which is now archived (301 -> notice), so it
+    " failed everywhere and reddened CI. This keeps the parser under test without
+    " any network dependency.
     let g:test_api_web_html = SpaceVim#api#import('web#html')
-    let g:test_api_web_html_paser = g:test_api_web_html.parseURL('https://spacevim.org')
-    AssertEqual g:test_api_web_html_paser.child[1].find('title').child[0], 'Home | SpaceVim'
+    let g:test_api_web_html_tree = g:test_api_web_html.parse("<html><head><title>SpaceVim2</title></head><body><p>hi</p></body></html>")
+    AssertEqual g:test_api_web_html_tree.find('title').child[0], 'SpaceVim2'
