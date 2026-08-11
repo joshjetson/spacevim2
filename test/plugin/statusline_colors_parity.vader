@@ -1,0 +1,65 @@
+" vim<->nvim PARITY test for the statusline HIGHLIGHT COLORS.
+"
+" SpaceVim#layers#core#statusline#def_colors() applies the statusline theme.
+" On nvim>=0.10 it dispatches to
+" v:lua.require('spacevim.plugin.statusline').def_colors(), which sets the
+" groups via nvim_set_hl (lua/spacevim/plugin/statusline.lua); on vim the
+" vimscript source of truth runs `hi!` per group
+" (autoload/SpaceVim/layers/core/statusline.vim ~line 848).
+"
+" BOTH read the SAME palette
+" (SpaceVim#mapping#guide#theme#SpaceVim#palette()), so the RESOLVED colors of
+" the key groups must be identical on both editors. Asserting the resolved
+" values here locks the two code paths together: any future color drift in one
+" implementation fails on one gate.
+"
+" NOTE on gui-hex case: vim's synIDattr(id,'bg#','gui') echoes back the exact
+" string handed to `hi!` (the palette's '#FFA500', uppercase), while nvim
+" canonicalizes to lowercase ('#ffa500') because nvim_set_hl stores the color
+" as an integer. Those are the SAME color, not drift -- the codebase's own
+" highlight API (lua/spacevim/api/vim/highlight.lua) already wraps this exact
+" synIDattr call in tolower() for that reason. gui-hex is therefore compared
+" case-insensitively (tolower); cterm numbers are compared exactly.
+
+Execute ( SpaceVim statusline#def_colors parity: resolved highlight colors ):
+  " Deterministic setup: force a dark background and pin the palette so both
+  " editors take the SpaceVim-theme branch of def_colors(). These globals are
+  " read at def_colors() time (and by the statusline autoload at load time);
+  " set them to SpaceVim defaults so neither path raises E121.
+  set background=dark
+  let g:spacevim_custom_color_palette = []
+  let g:spacevim_statusline_left = []
+  let g:spacevim_statusline_right = []
+  let g:colors_name = 'SpaceVim'
+
+  " Apply the theme. On nvim>=0.10 this runs the lua nvim_set_hl path; on vim
+  " it runs the vimscript `hi!` path -- both from the SpaceVim palette rows:
+  "   a = ['#282828','#FFA500',250,97]
+  "   b = ['#d75fd7','#4e4e4e',170,239]
+  "   c = ['#c6c6c6','#3a3a3a',251,237]
+  "   z = ['#1c1c1c',16]  (guibg, ctermbg)
+  call SpaceVim#layers#core#statusline#def_colors()
+
+  " ---- section a ----
+  AssertEqual tolower(synIDattr(hlID('SpaceVim_statusline_a'), 'fg#', 'gui')), '#282828'
+  AssertEqual tolower(synIDattr(hlID('SpaceVim_statusline_a'), 'bg#', 'gui')), '#ffa500'
+  AssertEqual synIDattr(hlID('SpaceVim_statusline_a'), 'fg', 'cterm'), '97'
+  AssertEqual synIDattr(hlID('SpaceVim_statusline_a'), 'bg', 'cterm'), '250'
+
+  " ---- section b ----
+  AssertEqual tolower(synIDattr(hlID('SpaceVim_statusline_b'), 'fg#', 'gui')), '#d75fd7'
+  AssertEqual tolower(synIDattr(hlID('SpaceVim_statusline_b'), 'bg#', 'gui')), '#4e4e4e'
+  AssertEqual synIDattr(hlID('SpaceVim_statusline_b'), 'fg', 'cterm'), '239'
+  AssertEqual synIDattr(hlID('SpaceVim_statusline_b'), 'bg', 'cterm'), '170'
+
+  " ---- section c ----
+  AssertEqual tolower(synIDattr(hlID('SpaceVim_statusline_c'), 'fg#', 'gui')), '#c6c6c6'
+  AssertEqual tolower(synIDattr(hlID('SpaceVim_statusline_c'), 'bg#', 'gui')), '#3a3a3a'
+  AssertEqual synIDattr(hlID('SpaceVim_statusline_c'), 'fg', 'cterm'), '237'
+  AssertEqual synIDattr(hlID('SpaceVim_statusline_c'), 'bg', 'cterm'), '251'
+
+  " ---- section z (fg inherited from c, bg from the z palette row) ----
+  AssertEqual tolower(synIDattr(hlID('SpaceVim_statusline_z'), 'fg#', 'gui')), '#c6c6c6'
+  AssertEqual tolower(synIDattr(hlID('SpaceVim_statusline_z'), 'bg#', 'gui')), '#1c1c1c'
+  AssertEqual synIDattr(hlID('SpaceVim_statusline_z'), 'fg', 'cterm'), '251'
+  AssertEqual synIDattr(hlID('SpaceVim_statusline_z'), 'bg', 'cterm'), '16'
