@@ -117,14 +117,18 @@ local function build_item(bufnr, n)
 
   local name = tabname(bufnr)
 
+  -- Mirror the vim tabline's 4-state coloring: the CURRENT buffer is checked
+  -- first, so current+modified -> _m and current+unmodified -> _a; an inactive
+  -- buffer that is modified uses the dimmer _m_i (not the bright _m). Checking
+  -- modified first (as the old code did) painted inactive-modified buffers the
+  -- same bright _m as the current one.
   local item_hilight
+  local modified = vim.api.nvim_buf_get_option(bufnr, 'modified')
 
-  if vim.api.nvim_buf_get_option(bufnr, 'modified') then
-    item_hilight = '%#SpaceVim_tabline_m# '
-  elseif bufnr == vim.api.nvim_get_current_buf() then
-    item_hilight = '%#SpaceVim_tabline_a# '
+  if bufnr == vim.api.nvim_get_current_buf() then
+    item_hilight = modified and '%#SpaceVim_tabline_m# ' or '%#SpaceVim_tabline_a# '
   else
-    item_hilight = '%#SpaceVim_tabline_b# '
+    item_hilight = modified and '%#SpaceVim_tabline_m_i# ' or '%#SpaceVim_tabline_b# '
   end
 
   return {
@@ -144,14 +148,18 @@ local function build_tab_item(tabid)
 
   local name = tabname(bufnr)
 
+  -- Mirror the vim tabline's 4-state coloring: the CURRENT buffer is checked
+  -- first, so current+modified -> _m and current+unmodified -> _a; an inactive
+  -- buffer that is modified uses the dimmer _m_i (not the bright _m). Checking
+  -- modified first (as the old code did) painted inactive-modified buffers the
+  -- same bright _m as the current one.
   local item_hilight
+  local modified = vim.api.nvim_buf_get_option(bufnr, 'modified')
 
-  if vim.api.nvim_buf_get_option(bufnr, 'modified') then
-    item_hilight = '%#SpaceVim_tabline_m# '
-  elseif bufnr == vim.api.nvim_get_current_buf() then
-    item_hilight = '%#SpaceVim_tabline_a# '
+  if bufnr == vim.api.nvim_get_current_buf() then
+    item_hilight = modified and '%#SpaceVim_tabline_m# ' or '%#SpaceVim_tabline_a# '
   else
-    item_hilight = '%#SpaceVim_tabline_b# '
+    item_hilight = modified and '%#SpaceVim_tabline_m_i# ' or '%#SpaceVim_tabline_b# '
   end
 
   return {
@@ -166,21 +174,21 @@ local function tabline_sep(a, b)
   local hi_a
   local hi_b
 
+  -- Separators only ever use _a/_m (current buffer) or _b (everything else),
+  -- matching the vim tabline: inactive buffers -- modified or not -- get _b
+  -- separators, while the _m_i tint lives only in the item padding. This keeps
+  -- the separator hi-combos to the three def_colors already defines.
   if not a then
     hi_a = 'SpaceVim_tabline_b'
-  elseif vim.api.nvim_buf_get_option(a.bufnr, 'modified') then
-    hi_a = 'SpaceVim_tabline_m'
   elseif a.bufnr == vim.api.nvim_get_current_buf() then
-    hi_a = 'SpaceVim_tabline_a'
+    hi_a = vim.api.nvim_buf_get_option(a.bufnr, 'modified') and 'SpaceVim_tabline_m' or 'SpaceVim_tabline_a'
   else
     hi_a = 'SpaceVim_tabline_b'
   end
   if not b then
     hi_b = 'SpaceVim_tabline_b'
-  elseif vim.api.nvim_buf_get_option(b.bufnr, 'modified') then
-    hi_b = 'SpaceVim_tabline_m'
   elseif b.bufnr == vim.api.nvim_get_current_buf() then
-    hi_b = 'SpaceVim_tabline_a'
+    hi_b = vim.api.nvim_buf_get_option(b.bufnr, 'modified') and 'SpaceVim_tabline_m' or 'SpaceVim_tabline_a'
   else
     hi_b = 'SpaceVim_tabline_b'
   end
@@ -551,11 +559,14 @@ function M.def_colors()
     ctermfg = t[1][4],
     ctermbg = t[1][3],
   })
+  -- palenight overrides the _b / _m_i backgrounds (mirrors the vim def_colors).
+  local b_bg = name == 'palenight' and '#44475a' or t[2][2]
+  local b_ctermbg = name == 'palenight' and 236 or t[2][3]
   vim.api.nvim_set_hl(0, 'SpaceVim_tabline_b', {
     fg = t[2][1],
-    bg = t[2][2],
+    bg = b_bg,
     ctermfg = t[2][4],
-    ctermbg = t[2][3],
+    ctermbg = b_ctermbg,
   })
   vim.api.nvim_set_hl(0, 'SpaceVim_tabline_m', {
     fg = t[5][1],
@@ -565,9 +576,9 @@ function M.def_colors()
   })
   vim.api.nvim_set_hl(0, 'SpaceVim_tabline_m_i', {
     fg = t[5][2],
-    bg = t[2][2],
+    bg = b_bg,
     ctermfg = t[5][4],
-    ctermbg = t[2][3],
+    ctermbg = b_ctermbg,
   })
   highlight.hi_separator('SpaceVim_tabline_a', 'SpaceVim_tabline_b')
   highlight.hi_separator('SpaceVim_tabline_m', 'SpaceVim_tabline_b')
