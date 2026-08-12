@@ -1,38 +1,49 @@
 <h1 align="center">
-<a href="https://github.com/joshjetson/spacevim2">
-  <img src="https://raw.githubusercontent.com/SpaceVim/SpaceVim/master/docs/logo.png" width="440" alt="SpaceVim2"/>
+  <a href="https://github.com/joshjetson/spacevim2">
+    <img src="assets/spacevim2-banner.svg" width="740" alt="SpaceVim2 — Modular Vim & Neovim, revived"/>
   </a>
 </h1>
 
 <p align="center">
-  <b>SpaceVim2</b> is a maintained continuation of
-  <a href="https://github.com/SpaceVim/SpaceVim">SpaceVim</a> — the community
-  distribution of Vim and Neovim — after its original author archived the
-  project. It keeps the same modular, layer-based design while being cleaned up
-  and kept working on both editors.
+  <b>A modular, layer-based distribution for Vim &amp; Neovim</b> — a maintained
+  revival of <a href="https://github.com/SpaceVim/SpaceVim">SpaceVim</a> after its
+  original author archived it. Same design, cleaned up and kept working
+  <i>the same way</i> on both editors.
 </p>
 
-[Quick Start Guide](https://github.com/SpaceVim/SpaceVim/blob/master/docs/quick-start-guide.md) \|
-[Documentation](https://github.com/SpaceVim/SpaceVim/blob/master/docs/documentation.md) \|
-[Layers](https://github.com/SpaceVim/SpaceVim/blob/master/docs/layers.md) \|
-[`:h SpaceVim`](doc/SpaceVim.txt)
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPLv3-5fd7ff.svg" alt="GPLv3"/></a>
+  <img src="https://img.shields.io/badge/editors-Vim%20·%20Neovim%200.10+-8ab4ff.svg" alt="Vim and Neovim 0.10+"/>
+  <img src="https://img.shields.io/badge/tests-81%20on%20both%20editors-ff875f.svg" alt="81 tests on both editors"/>
+  <img src="https://img.shields.io/badge/status-baseline%20release-3fb950.svg" alt="baseline release"/>
+</p>
 
-[![GPLv3 License](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://github.com/joshjetson/spacevim2/blob/master/LICENSE)
+<p align="center">
+  <a href="#install">Install</a> ·
+  <a href="#configure">Configure</a> ·
+  <a href="#features">Features</a> ·
+  <a href="#docs--help">Docs &amp; help</a> ·
+  <a href="doc/SpaceVim.txt"><code>:h SpaceVim</code></a>
+</p>
 
-![work-flow](https://img.spacevim.org/workflow.png)
+---
 
+## Why SpaceVim2?
 
-SpaceVim is a modular configuration of Vim and Neovim.
-It's inspired by spacemacs. It manages collections of plugins in layers,
-which help to collect related packages together to provide features.
-This approach helps keep the configuration organized and reduces
-overhead for the user by keeping them from having to think about
-what packages to install.
+SpaceVim organizes Vim/Neovim plugins and settings into **layers** — flip a
+language or feature on in one line of TOML and its plugins, keybindings, and
+config come with it. Inspired by Spacemacs, it keeps you out of the business of
+hand-managing packages.
 
-> **Docs note:** the guide/documentation/layers links above point to the
-> upstream SpaceVim English docs on GitHub (the archived `spacevim.org`
-> website now redirects to a maintenance notice). SpaceVim2 will grow its
-> own docs over time; the in-editor help (`:h SpaceVim`) ships in this repo.
+Upstream is archived. **SpaceVim2 picks it up**, with three priorities:
+
+- **One config, both editors.** SpaceVim historically drifted between Vim and
+  Neovim — things that worked in one quietly broke in the other. We hunt those
+  divergences down (config parsing, statusline, tabline so far) and lock each one
+  with a dual-editor test.
+- **Smaller and clearer.** ~630k lines of dead weight removed, dead abstractions
+  collapsed, the vendored plugin set documented in [`bundle/`](bundle/README.md).
+- **Actually tested.** 81 checks run on **both** Vim and Neovim on every change.
 
 ## Install
 
@@ -40,62 +51,78 @@ what packages to install.
 curl -sLf https://raw.githubusercontent.com/joshjetson/spacevim2/master/install.sh | bash
 ```
 
-The bootstrap script clones SpaceVim2 into `~/.SpaceVim` and wires up Vim/Neovim.
-Target one editor with `--install vim` / `--install neovim`, or remove everything
-with `--uninstall`; run `bash install.sh -h` for all options. (It's served from
-GitHub, not the retired `spacevim.org`.)
+Clones SpaceVim2 into `~/.SpaceVim` and wires up Vim/Neovim. Open your editor and
+the plugins install themselves.
+
+| You want to… | Add |
+| --- | --- |
+| install for one editor only | `-s -- --install vim` &nbsp;·&nbsp; `-s -- --install neovim` |
+| remove everything | `-s -- --uninstall` |
+| see all options | `bash install.sh -h` |
+
+> Served from GitHub — not the retired `spacevim.org`.
+
+## Configure
+
+Your config lives in **`~/.SpaceVim.d/init.toml`** (open it anytime with
+`SPC f v d`). Enabling a layer or changing an option is a single line:
+
+```toml
+[options]
+    colorscheme = "gruvbox"      # switch the theme — applies on next start
+
+[[layers]]
+    name = "lang#python"         # turn a language on and get its whole toolchain
+```
+
+Options and themes are read **identically on Vim and Neovim** — that's the parity
+work in action. Built-in `SpaceVim` and `gruvbox` themes work out of the box; add
+the `colorscheme` layer for more.
 
 ## Features
 
-- **Modularization:** plugins and functions are organized in [layers](https://github.com/SpaceVim/SpaceVim/blob/master/docs/layers.md).
-- **Compatible api:** a series of [compatible APIs](https://github.com/SpaceVim/SpaceVim/blob/master/docs/api.md) for Vim/Neovim.
-- **Great documentation:** English [documentation](https://github.com/SpaceVim/SpaceVim/blob/master/docs/documentation.md) and `:h SpaceVim`.
-- **Better experience:** core plugins rewritten in lua.
-- **Beautiful UI:** you'll love the awesome UI and its useful features.
-- **Mnemonic key bindings:** key binding guide will be displayed automatically.
-- **Fast boot time:** Lazy-load 90% of plugins with [dein.vim](https://github.com/Shougo/dein.vim).
-- **Lower the risk of RSI:** by heavily using the space bar instead of modifiers.
-- **Consistent experience:** consistent experience between terminal and gui.
+- **Layer system** — related plugins, keys, and config grouped and toggled together.
+- **Vim ⇔ Neovim parity** — the same `init.toml` yields the same editor, verified by tests.
+- **Lazy by default** — most plugins load on-demand via [dein.vim](https://github.com/Shougo/dein.vim), so startup stays quick.
+- **Mnemonic keybindings** — a `SPC`-led guide appears as you type; nothing to memorize blind.
+- **Lua-accelerated core** — Neovim runs Lua implementations of core plugins; vimscript works everywhere.
+- **Offline, pinned plugins** — everything ships vendored, so enabling a layer needs no network.
 
+## Docs & help
 
-## Project Layout
+- **In your editor:** `:h SpaceVim` — the help ships in this repo ([`doc/SpaceVim.txt`](doc/SpaceVim.txt)).
+- **Guides:** the upstream English docs still describe the shared design —
+  [Quick Start](https://github.com/SpaceVim/SpaceVim/blob/master/docs/quick-start-guide.md) ·
+  [Documentation](https://github.com/SpaceVim/SpaceVim/blob/master/docs/documentation.md) ·
+  [Layers](https://github.com/SpaceVim/SpaceVim/blob/master/docs/layers.md).
+
+> `spacevim.org` is retired; the links above point at the maintained English docs
+> on GitHub. SpaceVim2 will grow its own over time.
+
+## Project layout
 
 ```txt
-├─ .ci/                           build automation
-├─ .github/                       issue/PR templates
-├─ .SpaceVim.d/                   project specific configuration
-├─ after/                         overrule or add to the distributed defaults
-├─ autoload/SpaceVim.vim          SpaceVim core file
-├─ autoload/SpaceVim/api/         public APIs
-├─ autoload/SpaceVim/layers/      available layers
-├─ autoload/SpaceVim/plugins/     builtin plugins
-├─ autoload/SpaceVim/mapping/     mapping guide
-├─ colors/                        default colorscheme
-├─ docker/                        docker image generator
-├─ bundle/                        bundled plugins
-├─ lua/spacevim/                  core plugins/APIs rewritten in lua
-├─ doc/                           in-editor help (`:h SpaceVim`, en/cn)
-├─ bin/                           executables
-└─ test/                          tests (vader)
+autoload/SpaceVim.vim       core bootstrap
+autoload/SpaceVim/api/      public vimscript APIs
+autoload/SpaceVim/layers/   the layers you enable in init.toml
+lua/spacevim/               Lua implementations (Neovim)
+colors/                     the built-in SpaceVim theme
+bundle/                     vendored plugins  →  bundle/README.md
+doc/                        :h SpaceVim
+test/                       vader tests, run on Vim + Neovim
 ```
 
-## Contribute
+## Contributing
 
-SpaceVim2 builds on the work of everyone who contributed to SpaceVim.
-We are thankful for any contributions from the community.
+SpaceVim2 stands on the work of everyone who built SpaceVim. Issues and PRs are
+welcome — the dual-editor test suite in [`test/`](test/) keeps changes honest across
+both editors.
 
-<a href="https://github.com/SpaceVim/SpaceVim/graphs/contributors"><img src="https://opencollective.com/spacevim/contributors.svg?width=890&button=false" /></a>
+## Credits
 
-## Credits & Acknowledgements
-
-- [SpaceVim](https://github.com/SpaceVim/SpaceVim) by [Wang Shidong (@wsdjeg)](https://github.com/wsdjeg) and its contributors — the original project SpaceVim2 continues.
-- [Hack-SpaceVim](https://github.com/Gabirel/Hack-SpaceVim) by [@Gabirel](https://github.com/Gabirel)
-- [SpaceVimTutorial](https://everettjf.gitbooks.io/spacevimtutorial/content/) by [@everettjf](https://github.com/everettjf)
-- [10-minutes-to-SpaceVim](https://github.com/Jackiexiao/10-minutes-to-SpaceVim) by [@Jackiexiao](https://github.com/Jackiexiao)
-- [A First Look At SpaceVim](https://www.youtube.com/watch?v=iXPS_NHLj9k) by [@DistroTube](https://www.youtube.com/channel/UCVls1GmFKf6WlTraIb_IaJg)
-- [Getting Started With SpaceVim](https://www.youtube.com/watch?v=3xB501CJDB8) by [FOSS King](https://www.youtube.com/channel/UCfU_sitghekwveLh6yM_xuA)
-- [vimdoc](https://github.com/google/vimdoc): Vim help file generator
-- [spacemacs](https://www.spacemacs.org/): A community-driven Emacs distribution
-- Authors of all the plugins used in SpaceVim.
+- **[SpaceVim](https://github.com/SpaceVim/SpaceVim)** by [Wang Shidong (@wsdjeg)](https://github.com/wsdjeg) and its contributors — the project SpaceVim2 continues.
+- [Spacemacs](https://www.spacemacs.org/) — the community Emacs distribution that inspired the layer model.
+- [dein.vim](https://github.com/Shougo/dein.vim) — the plugin manager SpaceVim2 builds on.
+- Authors of every bundled plugin — catalogued in [`bundle/README.md`](bundle/README.md).
 
 <!-- vim:set nowrap: -->
