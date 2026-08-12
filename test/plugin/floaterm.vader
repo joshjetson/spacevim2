@@ -1,0 +1,41 @@
+" vim<->nvim PARITY test for the SpaceVim2 floating terminal (Phase 1).
+"
+" The modal is a popup terminal on Vim and a floating terminal on Neovim, but
+" its lifecycle must be identical: open shows it, hide closes the window but
+" KEEPS the session (terminal buffer + process) alive, reopen reuses that same
+" session, and close tears everything down. This locks that state machine on
+" both editors.
+"
+" status().open is truthy (v:true on nvim / 1 on vim) when shown and the literal
+" 0 when hidden, so open states use Assert and hidden states use AssertEqual ,0.
+
+Execute ( SpaceVim floaterm: open -> hide keeps session -> reopen -> close ):
+  " starts closed, no session
+  let st = SpaceVim#plugins#floaterm#status()
+  AssertEqual st.open, 0
+  AssertEqual st.alive, 0
+
+  " open: modal is shown and a terminal session is alive
+  call SpaceVim#plugins#floaterm#open()
+  let st = SpaceVim#plugins#floaterm#status()
+  Assert st.open, 'modal should be open after open()'
+  Assert st.alive, 'a terminal session should be alive after open()'
+  let g:_ft_first_buf = st.bufnr
+
+  " hide: window closes, but the session (and its process) stays running
+  call SpaceVim#plugins#floaterm#hide()
+  let st = SpaceVim#plugins#floaterm#status()
+  AssertEqual st.open, 0
+  Assert st.alive, 'hide() must keep the session running'
+
+  " reopen: the SAME terminal buffer -> session preserved across a toggle
+  call SpaceVim#plugins#floaterm#open()
+  let st = SpaceVim#plugins#floaterm#status()
+  AssertEqual st.bufnr, g:_ft_first_buf
+
+  " close: fully torn down
+  call SpaceVim#plugins#floaterm#close()
+  let st = SpaceVim#plugins#floaterm#status()
+  AssertEqual st.open, 0
+  AssertEqual st.alive, 0
+  unlet g:_ft_first_buf

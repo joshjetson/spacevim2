@@ -59,6 +59,15 @@ function! SpaceVim#layers#shell#config() abort
           \ ]
           \ ], 1)
 
+  " Floating terminal (SpaceVim2) --- a detachable, centered modal terminal that
+  " works on both Vim (popup) and Neovim (float). Provisional bindings; the full
+  " tabbed-session UX lands in a later phase.
+  command! -nargs=0 SPFloatTerm call SpaceVim#plugins#floaterm#toggle()
+  nnoremap <silent> <F12> :<C-u>call SpaceVim#plugins#floaterm#toggle()<CR>
+  if has('nvim') || exists(':tnoremap') == 2
+    exe 'tnoremap <silent><F12> <C-\><C-n>:<C-u>call SpaceVim#plugins#floaterm#toggle()<CR>'
+  endif
+
   if has('nvim') || exists(':tnoremap') == 2
     exe 'tnoremap <silent><C-Right> <C-\><C-n>:<C-u>wincmd l<CR>'
     exe 'tnoremap <silent><C-Left>  <C-\><C-n>:<C-u>wincmd h<CR>'
