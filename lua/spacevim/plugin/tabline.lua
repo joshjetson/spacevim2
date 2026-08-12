@@ -69,19 +69,53 @@ local function reverse_table(t)
   return tmp
 end
 
-local function build_item(bufnr, n)
+local function truthy(v)
+  return v ~= nil and v ~= 0 and v ~= false
+end
+
+-- buffer_index_type-aware numbering, mirroring s:wrap_id in
+-- autoload/SpaceVim/layers/core/tabline.vim so vim and nvim number
+-- tabs/buffers identically for the same g:spacevim_buffer_index_type.
+function M.wrap_id(id)
+  local t = vim.g.spacevim_buffer_index_type
+  if t == 3 then
+    return messletters.index_num(id) .. ' '
+  elseif t == 4 then
+    return id .. ' '
+  else
+    return messletters.bubble_num(id, t) .. ' '
+  end
+end
+
+-- display name for a buffer, mirroring s:tabname in the vim tabline:
+-- special-cases [Vader]/terminal buffers and appends a filetype icon ONLY
+-- when g:spacevim_enable_tabline_ft_icon (or the *_filetype_icon alias) is set.
+local function tabname(bufnr)
   local name = vim.fn.bufname(bufnr)
+  local fn
+  if name == '\\[Vader\\]' then
+    fn = '[Vader]'
+  elseif vim.fn.match(name, 'term://.*') ~= -1 then
+    fn = 'Terminal'
+  else
+    fn = vim.fn.fnamemodify(name, ':t')
+  end
+  if truthy(vim.g.spacevim_enable_tabline_ft_icon) or truthy(vim.g.spacevim_enable_tabline_filetype_icon) then
+    local icon = file.fticon(fn)
+    if icon ~= '' then
+      fn = fn .. ' ' .. icon
+    end
+  end
+  if fn == '' then
+    return 'No Name'
+  end
+  return fn
+end
 
-  local icon = ''
-
+local function build_item(bufnr, n)
   local tablineat = '%' .. n .. '@v:lua.___spacevim_tabline.jump@'
 
-  if name == '' then
-    name = 'No Name'
-  else
-    name = vim.fn.fnamemodify(name, ':t')
-    icon = file.fticon(name)
-  end
+  local name = tabname(bufnr)
 
   local item_hilight
 
@@ -94,14 +128,7 @@ local function build_item(bufnr, n)
   end
 
   return {
-    str = item_hilight
-      .. tablineat
-      .. messletters.bubble_num(n, 1)
-      .. ' '
-      .. name
-      .. ' '
-      .. icon
-      .. ' ',
+    str = item_hilight .. tablineat .. M.wrap_id(n) .. name .. ' ',
     bufnr = bufnr,
     len = #name + 4,
     pin = false,
@@ -111,19 +138,11 @@ end
 local function build_tab_item(tabid)
   local bufnr = vim.api.nvim_win_get_buf(vim.api.nvim_tabpage_get_win(tabid))
 
-  local name = vim.fn.bufname(bufnr)
-
-  local icon = ''
   local nr = vim.api.nvim_tabpage_get_number(tabid)
 
   local tablineat = '%' .. nr .. '@SpaceVim#layers#core#tabline#jump@'
 
-  if name == '' then
-    name = 'No Name'
-  else
-    name = vim.fn.fnamemodify(name, ':t')
-    icon = file.fticon(name)
-  end
+  local name = tabname(bufnr)
 
   local item_hilight
 
@@ -136,14 +155,7 @@ local function build_tab_item(tabid)
   end
 
   return {
-    str = item_hilight
-      .. tablineat
-      .. messletters.bubble_num(nr, 1)
-      .. ' '
-      .. name
-      .. ' '
-      .. icon
-      .. ' ',
+    str = item_hilight .. tablineat .. M.wrap_id(nr) .. name .. ' ',
     bufnr = bufnr,
     len = #name + 4,
     pin = false,

@@ -1,0 +1,33 @@
+" vim<->nvim PARITY test for the tabline's buffer/tab numbering.
+"
+" On nvim>=0.9 SpaceVim#layers#core#tabline#wrap_id() dispatches to
+" v:lua.require('spacevim.plugin.tabline').wrap_id(); on vim it runs s:wrap_id
+" in autoload/SpaceVim/layers/core/tabline.vim. Both must honor
+" g:spacevim_buffer_index_type identically -- otherwise the tabline numbers
+" buffers differently depending on editor. The default (type 4) regressed to
+" bubbled glyphs on nvim (the lua side hardcoded bubble_num(n, 1)); this locks
+" the two implementations together.
+"
+" wrap_id is a pure id -> label function, so it is a genuine parity lock. It is
+" asserted against the messletters api (itself parity-locked) instead of
+" hardcoded glyphs, so it also catches vim<->lua messletters drift.
+
+Execute ( SpaceVim tabline#wrap_id parity: buffer_index_type -> numbering ):
+  let g:_tabline_test_save = get(g:, 'spacevim_buffer_index_type', 4)
+
+  " type 4 (the default): plain number + trailing space, on BOTH editors.
+  let g:spacevim_buffer_index_type = 4
+  AssertEqual SpaceVim#layers#core#tabline#wrap_id(3), '3 '
+  AssertEqual SpaceVim#layers#core#tabline#wrap_id(12), '12 '
+
+  " type 3: index_num glyphs.
+  let g:spacevim_buffer_index_type = 3
+  AssertEqual SpaceVim#layers#core#tabline#wrap_id(3), SpaceVim#api#import('messletters').index_num(3) . ' '
+
+  " types 1 & 2: bubble_num glyphs for the given style.
+  let g:spacevim_buffer_index_type = 2
+  AssertEqual SpaceVim#layers#core#tabline#wrap_id(3), SpaceVim#api#import('messletters').bubble_num(3, 2) . ' '
+  let g:spacevim_buffer_index_type = 1
+  AssertEqual SpaceVim#layers#core#tabline#wrap_id(3), SpaceVim#api#import('messletters').bubble_num(3, 1) . ' '
+
+  let g:spacevim_buffer_index_type = g:_tabline_test_save

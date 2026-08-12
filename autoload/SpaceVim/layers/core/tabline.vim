@@ -144,6 +144,12 @@ if has('nvim-0.9.0')
     call v:lua.require('spacevim.plugin.tabline').def_colors()
   endfunction
 
+  " buffer_index_type-aware numbering; exposed so the vim<->nvim parity test can
+  " assert both editors number tabs/buffers identically. See s:wrap_id below.
+  function! SpaceVim#layers#core#tabline#wrap_id(id) abort
+    return v:lua.require('spacevim.plugin.tabline').wrap_id(a:id)
+  endfunction
+
   function! SpaceVim#layers#core#tabline#health() abort
     call SpaceVim#layers#core#tabline#config()
     return 1
@@ -279,6 +285,12 @@ function! s:wrap_id(id) abort
     let id = s:MESSLETTERS.bubble_num(a:id, g:spacevim_buffer_index_type)
   endif
   return id . ' '
+endfunction
+
+" public wrapper mirroring the nvim-branch function of the same name, so the
+" vim<->nvim parity test can assert identical numbering across editors.
+function! SpaceVim#layers#core#tabline#wrap_id(id) abort
+  return s:wrap_id(a:id)
 endfunction
 
 " build the tab item, the first argv is bufnr, and the second argv is tabnr
