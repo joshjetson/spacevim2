@@ -20,7 +20,7 @@
 
 function! SpaceVim#layers#lang#octave#plugins() abort
   let plugins = []
-  call add(plugins, [g:_spacevim_root_dir . 'bundle/vim-octave', {'merged' : 0}])
+  call add(plugins, [g:_spacevim_root_dir . 'bundle/octave', {'merged' : 0}])
   return plugins
 endfunction
 

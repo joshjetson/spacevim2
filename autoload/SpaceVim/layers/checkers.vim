@@ -63,7 +63,9 @@ function! SpaceVim#layers#checkers#plugins() abort
   elseif g:spacevim_lint_engine ==# 'ale'
     call add(plugins, [g:_spacevim_root_dir . 'bundle/ale', {'merged' : 0, 'loadconf' : 1 , 'loadconf_before' : 1}])
   elseif g:spacevim_lint_engine ==# 'syntastic'
-    call add(plugins, [g:_spacevim_root_dir . 'bundle/syntastic', {'merged' : 0, 'loadconf' : 1 , 'loadconf_before' : 1}])
+    " syntastic is not vendored in bundle/; fetch it from GitHub so users who
+    " opt into the syntastic lint engine actually get it (dein clones by name).
+    call add(plugins, ['vim-syntastic/syntastic', {'merged' : 0, 'loadconf' : 1 , 'loadconf_before' : 1}])
   endif
 
   return plugins
