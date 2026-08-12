@@ -48,7 +48,10 @@ let s:NVIM_VERSION = SpaceVim#api#import('neovim#version')
 let s:FILE = SpaceVim#api#import('file')
 let s:enabled_clients = []
 let s:override_client_cmds = {}
-let s:use_nvim_lsp = (has('nvim-0.5.0') && s:NVIM_VERSION.is_release_version()) || has('nvim-0.6.0')
+" nvim floor is 0.10: the vendored nvim-lspconfig (latest pin) is used only on
+" nvim >= 0.10. Below that -- and on vim -- s:use_nvim_lsp is false and the
+" mature reg_server / vim-lsp path is used instead.
+let s:use_nvim_lsp = has('nvim-0.10.0')
 
 function! SpaceVim#layers#lsp#health() abort
   call SpaceVim#layers#lsp#plugins()
@@ -73,37 +76,11 @@ endfunction
 
 function! SpaceVim#layers#lsp#plugins() abort
   let plugins = []
-  if has('nvim-0.9.1')
+  " nvim floor is 0.10: use the latest vendored nvim-lspconfig. The older pins
+  " (nvim-lspconfig-0.1.4 / -0.1.3 / base, for nvim 0.5-0.9) were dropped; nvim
+  " below 0.10 falls through to the LanguageClient / vim-lsp path below.
+  if has('nvim-0.10.0')
     call add(plugins, [g:_spacevim_root_dir . 'bundle/nvim-lspconfig-latest', {'merged' : 0, 'loadconf' : 1, 'on_event' : ['BufReadPost']}])
-    if g:spacevim_autocomplete_method ==# 'deoplete'
-      call add(plugins, [g:_spacevim_root_dir . 'bundle/deoplete-lsp', {'merged' : 0}])
-    elseif g:spacevim_autocomplete_method ==# 'nvim-cmp'
-      call add(plugins, [g:_spacevim_root_dir . 'bundle/cmp-nvim-lsp', {
-            \ 'merged' : 0,
-            \ }])
-    endif
-  elseif has('nvim-0.8.0')
-    call add(plugins, [g:_spacevim_root_dir . 'bundle/nvim-lspconfig-0.1.4', {'merged' : 0, 'loadconf' : 1}])
-    if g:spacevim_autocomplete_method ==# 'deoplete'
-      call add(plugins, [g:_spacevim_root_dir . 'bundle/deoplete-lsp', {'merged' : 0}])
-    elseif g:spacevim_autocomplete_method ==# 'nvim-cmp'
-      call add(plugins, [g:_spacevim_root_dir . 'bundle/cmp-nvim-lsp', {
-            \ 'merged' : 0,
-            \ }])
-    endif
-  elseif has('nvim-0.7.0')
-    call add(plugins, [g:_spacevim_root_dir . 'bundle/nvim-lspconfig-0.1.3', {'merged' : 0, 'loadconf' : 1}])
-    if g:spacevim_autocomplete_method ==# 'deoplete'
-      call add(plugins, [g:_spacevim_root_dir . 'bundle/deoplete-lsp', {'merged' : 0}])
-    elseif g:spacevim_autocomplete_method ==# 'nvim-cmp'
-      call add(plugins, [g:_spacevim_root_dir . 'bundle/cmp-nvim-lsp', {
-            \ 'merged' : 0,
-            \ }])
-    endif
-    " this is the laste commit support nvim-0.5.0
-    " https://github.com/neovim/nvim-lspconfig/tree/4569e14e59bed1d18a91db76fe3261628f60e3f0
-  elseif has('nvim-0.5.0')
-    call add(plugins, [g:_spacevim_root_dir . 'bundle/nvim-lspconfig', {'merged' : 0, 'loadconf' : 1}])
     if g:spacevim_autocomplete_method ==# 'deoplete'
       call add(plugins, [g:_spacevim_root_dir . 'bundle/deoplete-lsp', {'merged' : 0}])
     elseif g:spacevim_autocomplete_method ==# 'nvim-cmp'

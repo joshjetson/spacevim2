@@ -1,6 +1,6 @@
 # `bundle/` — vendored plugins
 
-This directory holds the plugins SpaceVim2 ships **with the repo** (currently 196).
+This directory holds the plugins SpaceVim2 ships **with the repo** (currently 191).
 They are not a build artifact and not optional scaffolding — they are how SpaceVim
 delivers plugins, so please read this before adding, removing, or "cleaning up" anything here.
 
@@ -36,16 +36,20 @@ this one must ship in-tree.
 Vendored plugins are what you get out of the box; `custom_plugins` in your init.toml are
 fetched live from GitHub. The two mechanisms coexist.
 
-## Why some plugins have version suffixes
+## Neovim floor and version pins
 
-A few plugins are vendored at **multiple pinned versions** and selected by your Neovim
-version at runtime (the layer builds the path by concatenation, e.g.
-`'bundle/nvim-treesitter' . l:version`). Do **not** delete these as "duplicates" — each is
-live for a different editor:
+spacevim2 targets **Neovim ≥ 0.10** (and Vim). The `lsp`, `telescope`, and `treesitter`
+layers each vendor a **single** pin, and those layers do not load on older nvim:
 
-- `nvim-treesitter` (Vim / older Nvim) and `nvim-treesitter-0.9.1` (Nvim ≥ 0.8) — `layers/treesitter.vim`
-- `telescope.nvim-0.1.2` / `-0.1.5` / `-0.1.8` — `layers/telescope.vim`
-- `nvim-lspconfig` / `-0.1.3` / `-0.1.4` / `-latest` — `layers/lsp.vim`
+- `nvim-lspconfig-latest` — `layers/lsp.vim` (nvim ≥ 0.10; below that, and on Vim, the
+  mature reg_server / vim-lsp path is used instead)
+- `telescope.nvim-0.1.8` — `layers/telescope.vim`
+- `nvim-treesitter-0.9.1` — `layers/treesitter.vim`
+
+The older per-nvim-version pins (`nvim-lspconfig` / `-0.1.3` / `-0.1.4`,
+`telescope.nvim-0.1.2` / `-0.1.5`, unversioned `nvim-treesitter`) were dropped when the
+0.10 floor was set. If you ever lower the floor, restore the matching pins and their
+`has('nvim-0.x')` dispatch branches.
 
 ## Catalog
 
@@ -54,9 +58,9 @@ what pulls it in:
 
 **Core, UI & statusline (38)** — `dein.vim`, `vim-airline`, `vim-airline-themes`, `vim-startify`, `nerdtree`, `nerdtree-git-plugin`, `nvim-tree.lua`, `neo-tree.nvim`, `nui.nvim`, `vimfiler.vim`, `defx.nvim`, `defx-git`, `defx-icons`, `defx-sftp`, `nvim-web-devicons`, `tagbar`, `tagbar-makefile.vim`, `tagbar-proto.vim`, `indentLine`, `indent-blankline.nvim`, `vim-matchup`, `vim-better-whitespace`, `vim-cursorword`, `vim-choosewin`, `vim-grepper`, `vim-smoothie`, `scrollbar.vim`, `winbar.nvim`, `quickfix.nvim`, `clever-f.vim`, `open-browser.vim`, `nerdcommenter`, `flygrep.nvim`, `gruvbox`, `vim-clipboard`, `nvim-yarp`, `nvim-if-lua-compat`, `vim-hug-neovim-rpc`
 
-**Completion, LSP & Treesitter (27)** — `nvim-lspconfig`(+`-0.1.3`/`-0.1.4`/`-latest`), `nvim-treesitter`, `nvim-cmp`, `cmp-buffer`, `cmp-path`, `cmp-cmdline`, `cmp-dictionary`, `cmp-nvim-lsp`, `cmp-neosnippet`, `lspkind-nvim`, `deoplete.nvim`, `deoplete-lsp`, `deoplete-dictionary`, `neosnippet.vim`, `neosnippet-snippets`, `vim-snippets`, `neco-syntax`, `neoinclude.vim`, `neopairs.vim`, `context_filetype.vim`, `CompleteParameter.vim`, `delimitMate`, `echodoc.vim`, `coc.nvim-release`
+**Completion, LSP & Treesitter (23)** — `nvim-lspconfig-latest`, `nvim-treesitter-0.9.1`, `nvim-cmp`, `cmp-buffer`, `cmp-path`, `cmp-cmdline`, `cmp-dictionary`, `cmp-nvim-lsp`, `cmp-neosnippet`, `lspkind-nvim`, `deoplete.nvim`, `deoplete-lsp`, `deoplete-dictionary`, `neosnippet.vim`, `neosnippet-snippets`, `vim-snippets`, `neco-syntax`, `neoinclude.vim`, `neopairs.vim`, `context_filetype.vim`, `CompleteParameter.vim`, `delimitMate`, `echodoc.vim`, `coc.nvim-release`
 
-**Fuzzy find & file nav (15)** — `telescope.nvim-0.1.2`/`-0.1.5`/`-0.1.8`, `telescope-fzf-native.nvim`, `telescope-ctags-outline.nvim`, `telescope-menu`, `plenary.nvim`, `unite.vim`, `unite-sources`, `neomru.vim`, `neoyank.vim`, `LeaderF-snippet`, `LeaderF-neosnippet`, `vimproc.vim`, `vim-van`
+**Fuzzy find & file nav (13)** — `telescope.nvim-0.1.8`, `telescope-fzf-native.nvim`, `telescope-ctags-outline.nvim`, `telescope-menu`, `plenary.nvim`, `unite.vim`, `unite-sources`, `neomru.vim`, `neoyank.vim`, `LeaderF-snippet`, `LeaderF-neosnippet`, `vimproc.vim`, `vim-van`
 
 **Git & GitHub (7)** — `vim-fugitive`, `gina.vim`, `git.vim`, `github.vim`, `github-issues.vim`, `vim-github-dashboard`, `vim-dispatch`
 

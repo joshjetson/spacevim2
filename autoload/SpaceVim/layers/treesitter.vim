@@ -13,12 +13,9 @@
 
 function! SpaceVim#layers#treesitter#plugins() abort
   let plugins = []
-  if has('nvim-0.8.0')
-    let l:version = '-0.9.1'
-  else
-    let l:version = ''
-  endif
-  call add(plugins, [g:_spacevim_root_dir . 'bundle/nvim-treesitter' . l:version,
+  " nvim floor is 0.10 (>= 0.8), so the pinned nvim-treesitter-0.9.1 is always
+  " the right one; the older unversioned pin was dropped.
+  call add(plugins, [g:_spacevim_root_dir . 'bundle/nvim-treesitter-0.9.1',
         \ {
           \ 'merged' : 0,
           \ 'loadconf' : 1 ,
@@ -41,6 +38,6 @@ endfunction
 
 function! SpaceVim#layers#treesitter#loadable() abort
 
-  return has('nvim')
+  return has('nvim-0.10.0')
 
 endfunction
