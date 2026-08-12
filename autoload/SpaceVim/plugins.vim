@@ -140,9 +140,14 @@ endfunction
 
 function! SpaceVim#plugins#defind_hooks(bundle) abort
    " call SpaceVim#logger#debug('plugin name is ' .  g:dein#name)
-  call dein#config(g:dein#name, {
-        \ 'hook_source' : "call SpaceVim#util#loadConfig('plugins/" . s:get_config_name(g:dein#name) . "')"
-        \ })
+  " Attach the plugin's config-loading hook WITHOUT re-parsing the plugin.
+  " dein#config() re-runs dein#parse#_add(), which regenerates the plugin's
+  " lazy dummy commands/mappings a SECOND time. That redundant pass tripped
+  " harmless (silent!-swallowed) E174/E227 'already exists' lines into
+  " :messages on every startup, and did the parse work twice. dein#set_hook()
+  " sets the identical hook_source in place, with no re-parse.
+  call dein#set_hook(g:dein#name, 'hook_source',
+        \ "call SpaceVim#util#loadConfig('plugins/" . s:get_config_name(g:dein#name) . "')")
 endfunction
 
 
