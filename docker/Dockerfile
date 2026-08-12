@@ -1,6 +1,8 @@
 FROM ubuntu:latest
 
-MAINTAINER Shidong Wang <wsdjeg@outlook.com>
+LABEL org.opencontainers.image.title="SpaceVim2" \
+      org.opencontainers.image.source="https://github.com/joshjetson/spacevim2" \
+      org.opencontainers.image.licenses="GPL-3.0"
 
 RUN apt update && \
     apt install -y \
@@ -30,9 +32,9 @@ ENV PYTHON3_HOST_PROG "/usr/bin/python3"
 
 RUN mkdir -p $HOME/.config $HOME/.SpaceVim.d
 
-RUN curl https://raw.githubusercontent.com/SpaceVim/SpaceVim/master/docker/init.toml > $HOME/.SpaceVim.d/init.toml
+RUN curl https://raw.githubusercontent.com/joshjetson/spacevim2/master/docker/init.toml > $HOME/.SpaceVim.d/init.toml
 
-RUN curl -sLf https://spacevim.org/install.sh | bash
+RUN curl -sLf https://raw.githubusercontent.com/joshjetson/spacevim2/master/install.sh | bash
 
 RUN nvim --headless +'call dein#install#_update([], "install", v:false)' +qall
 

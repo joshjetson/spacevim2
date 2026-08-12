@@ -1,13 +1,18 @@
 ### PR Prelude
 
-Thank you for working on SpaceVim! :)
+Thanks for contributing to SpaceVim2!
 
-Please complete these steps and check these boxes before filing your PR:
+Before filing your PR, please confirm:
 
-- [ ] I have read and understood SpaceVim's [CONTRIBUTING](https://github.com/SpaceVim/SpaceVim/blob/master/CONTRIBUTING.md) document.
-- [ ] I have read and understood SpaceVim's [CODE_OF_CONDUCT](https://github.com/SpaceVim/SpaceVim/blob/master/CODE_OF_CONDUCT.md) document.
-- [ ] I understand my PR may be closed if it becomes obvious I didn't actually perform all of these steps.
+- [ ] I read the [Contributing](../README.md#contributing) section of the README.
+- [ ] I ran the dual-editor test suite in [`test/`](../test/) on **both** Vim and
+      Neovim, and it passes (SpaceVim2 must behave the same on both).
+- [ ] My change keeps Vim ⇔ Neovim parity, or I've noted where it can't.
 
-### Why this change is necessary and useful?
+### Why is this change needed?
 
-[Please explain **in detail** why the changes in this PR are needed.]
+[Explain **in detail** what problem this solves or what it adds.]
+
+### What does it change?
+
+[Summarize the change. Note any new/updated tests.]

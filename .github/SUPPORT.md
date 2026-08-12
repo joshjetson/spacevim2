@@ -1,15 +1,15 @@
-SpaceVim is an open source project.
-Currently, this project is maintained by [@wsdjeg](https://github.com/wsdjeg),
-If you use SpaceVim in your daily work and feel that it has made your life easier,
-please consider supporting SpaceVim by:
+# Getting help with SpaceVim2
 
-- [Become a backer on opencollective](https://opencollective.com/spacevim)
-- [Become a backer on Bountysource](https://salt.bountysource.com/teams/spacevim)
+SpaceVim2 is a community-maintained revival of SpaceVim. If you're stuck:
 
-Also, you can buy me a coffee via ko-fi.com or wechat:
+- **Read the docs first** — the [README](../README.md), the
+  [Configuration](../docs/configuration.md) and [Layers](../docs/layers.md)
+  guides, and the in-editor reference (`:h SpaceVim`).
+- **Search existing issues** — <https://github.com/joshjetson/spacevim2/issues>.
+  Your question may already be answered.
+- **Open an issue** — if it's a bug, include your editor and version
+  (`vim --version` / `nvim --version`), your `~/.SpaceVim.d/init.toml`, and steps
+  to reproduce. Reproducing it in the [Docker image](../docker/README.md) helps
+  confirm it isn't a local-environment problem.
 
-<a href='https://ko-fi.com/SpaceVim' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://az743702.vo.msecnd.net/cdn/kofi4.png?v=f' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
-
-| wechat                                                                   | alipay                                                                     |
-| ------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
-| <img src="https://spacevim.org/img/weixin.png" height="150" width="150"> | <img src="https://spacevim.org/img/zhifubao.png" height="150" width="150"> |
+Please keep reports focused and reproducible — it's the fastest path to a fix.

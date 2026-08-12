@@ -1,43 +1,49 @@
-## SpaceVim in DockerHub
+# SpaceVim2 in Docker
 
-[![Docker Automated build](https://img.shields.io/docker/automated/wsdjeg2/spacevim)](https://hub.docker.com/r/wsdjeg2/spacevim)
-[![Docker Image Size (latest by date)](https://img.shields.io/docker/image-size/wsdjeg2/spacevim?sort=date)](https://hub.docker.com/r/wsdjeg2/spacevim)
-[![Docker Pulls](https://img.shields.io/docker/pulls/wsdjeg2/spacevim)](https://hub.docker.com/r/wsdjeg2/spacevim)
+This `Dockerfile` builds Neovim with SpaceVim2 preinstalled. Handy for:
 
-This Dockerfile builds neovim `HEAD` and installs the latest available version of SpaceVim. You might want to use this for several reasons:
+- A consistent Neovim + SpaceVim2 anywhere Docker runs.
+- Trying SpaceVim2 without touching your current Vim/Neovim config.
+- Reproducing bug reports — if it happens in this clean container, it's likelier
+  a real bug than a local-environment issue.
 
-- Have a consistent version of Neovim and SpaceVim as long as the machine supports Docker.
-- Try SpaceVim without modifying your current Vim/Neovim configuration.
-- Try the latest Neovim with SpaceVim.
-- Try SpaceVim with a newer version of Python.
-- Debug SpaceVim configurations. e.g. when posting a bug report if you can reproduce it in this container then there's a higher chance that it is a true bug and not just an issue with your machine.
+The image installs SpaceVim2 from this repository (`joshjetson/spacevim2`) and
+runs `dein#install()` at build time so plugins are baked in.
 
-### FAQ
+## Build
 
-Isn't Docker stateless? Won't I have to reinstall all plugins each time I launch the container?
+Using the supplied `Makefile`:
 
-- During the build we call `dein#install()` so all plugins are installed and frozen. Your custom configurations can be added as an additional build step using the Docker `COPY` command.
+```sh
+make build
+```
 
-### Build
+or directly:
 
-You can build using the supplied `Makefile`:
+```sh
+docker build -t spacevim2 -f Dockerfile .
+```
 
-    make build
+## Run
 
-or call the command manually using:
+```sh
+docker run -it spacevim2
+```
 
-    docker build -t nvim -f Dockerfile .
+Mount your working directory to edit real files:
 
-### Run
+```sh
+docker run -it -v "$(pwd)":/home/spacevim/src spacevim2
+```
 
-You can run the container using:
+A handy alias:
 
-    docker run -it nvim
+```sh
+alias dvim='docker run -it -v "$(pwd)":/home/spacevim/src spacevim2'
+```
 
-but that isn't terribly useful since changes made inside the container won't be visible outside. More useful is mounting the current working directory inside the container:
+## FAQ
 
-    docker run -it -v $(pwd):/home/spacevim/src nvim
-
-Even better is an alias `dnvim` which will do this automatically:
-
-    alias dnvim='docker run -it -v $(pwd):/home/spacevim/src nvim'
+**Isn't Docker stateless — won't plugins reinstall each launch?**
+No. The build calls `dein#install()`, so plugins are installed and frozen into
+the image. Add your own `~/.SpaceVim.d/init.toml` with a `COPY` step to customize.
