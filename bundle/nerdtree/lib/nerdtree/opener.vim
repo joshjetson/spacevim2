@@ -55,7 +55,10 @@ function! s:Opener._firstUsableWindow()
     let i = 1
     while i <= winnr('$')
         let bnum = winbufnr(i)
-        if bnum !=# -1 && getbufvar(bnum, '&buftype') ==# ''
+        " SpaceVim2: also treat a terminal window as usable, so opening a file
+        " reuses it (replacing the terminal) instead of splitting -- terminals
+        " are just buffers here.
+        if bnum !=# -1 && getbufvar(bnum, '&buftype') =~# '\v^(|terminal)$'
                     \ && !getwinvar(i, '&previewwindow')
                     \ && (!getbufvar(bnum, '&modified') || &hidden)
             return i
@@ -107,7 +110,8 @@ function! s:Opener._isWindowUsable(winnumber)
 
     let oldwinnr = winnr()
     call nerdtree#exec(a:winnumber . 'wincmd p', 1)
-    let specialWindow = getbufvar('%', '&buftype') !=# '' || getwinvar('%', '&previewwindow')
+    " SpaceVim2: a terminal window is NOT 'special' here -- let files open over it
+    let specialWindow = getbufvar('%', '&buftype') !~# '\v^(|terminal)$' || getwinvar('%', '&previewwindow')
     let modified = &modified
     call nerdtree#exec(oldwinnr . 'wincmd p', 1)
 
