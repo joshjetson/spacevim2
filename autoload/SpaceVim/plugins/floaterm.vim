@@ -20,13 +20,19 @@ scriptencoding utf-8
 "              (we translate Vim's column into shell left-arrows). i = before the
 "              char under the cursor, a = after it. On any other line it just
 "              resumes typing normally.
+"   x       -> delete the char under the cursor          (from NAVIGATE)
+"   dw / db -> delete the word forward / backward        (from NAVIGATE)
+"   D       -> delete from the cursor to end of line     (from NAVIGATE)
+"   dd      -> clear the whole input line, even wrapped  (from NAVIGATE)
 "   <Esc>   -> NAVIGATE (Vim's Terminal-Normal): motions, visual select, y to copy
-"   <C-v>   -> paste the last yank while typing        (never auto-runs)
+"   <C-v>   -> paste the last yank while typing          (never auto-runs)
 "   P       -> (from NAVIGATE) paste the last yank and drop into TYPING (never runs)
 "
 " Paste never executes: a linewise yank carries a trailing newline, and sending
-" a newline to a shell IS pressing Enter -- so we strip the trailing newline and
-" the text just sits on the prompt for you to review.
+" a newline to a shell IS pressing Enter -- so we strip the trailing newline; a
+" multi-line paste keeps its inner newlines but as quoted-inserts, so it lands as
+" one multi-line command to review, not a run of executed lines. Deletes drop you
+" into TYPING at the edit point, since the shell owns and redraws the line.
 
 let s:count = 0
 
@@ -55,10 +61,19 @@ function! s:enter_job() abort
   call feedkeys('i', 'n')
 endfunction
 
-" paste a register into the shell WITHOUT running it: strip the trailing newline
-" so a linewise yank lands on the prompt instead of executing.
+" paste a register into the shell WITHOUT running it. Drop CRs and the trailing
+" newline (a linewise yank's newline would auto-run the command). Keep INTERNAL
+" newlines but send each as a quoted-insert (Ctrl-V, LF) so a multi-line paste
+" goes in literally as one multi-line command instead of executing line by line.
+" (Bracketed paste isn't portable -- pre-4.4 bash echoes the markers raw AND
+" still runs each line; Ctrl-V quoted-insert works on both bash and zsh.)
 function! s:paste(reg) abort
-  call s:send(substitute(getreg(a:reg), '\r\?\n\+$', '', ''))
+  let l:text = substitute(getreg(a:reg), '\r', '', 'g')
+  let l:text = substitute(l:text, '\n\+$', '', '')
+  if empty(l:text)
+    return
+  endif
+  call s:send(join(split(l:text, '\n', 1), nr2char(22) . nr2char(10)))
 endfunction
 
 function! s:paste_and_type(reg) abort
@@ -81,20 +96,49 @@ function! s:mark_end() abort
   let b:ft_shell_end = [line('.'), l:scol]
 endfunction
 
-" Resume TYPING at the navigated column: from the input end, step the shell
-" cursor left to the Vim cursor's screen column by sending that many left-arrows.
-" i lands before the char under the cursor; a is one grapheme further right. Only
-" meaningful on the same (live input) line we left from; else just resume typing.
-function! s:resume(kind) abort
+" Step the shell cursor left from the input end to the Vim cursor's screen
+" column, by sending that many left-arrows. after=1 stops one grapheme further
+" right (AFTER the cursor char). No-op unless we're on the recorded input line.
+function! s:lefts_to_cursor(after) abort
   let l:end = get(b:, 'ft_shell_end', [])
   let l:vcol = virtcol('.')
-  if len(l:end) == 2 && line('.') ==# l:end[0] && l:vcol <=# l:end[1]
-    let l:n = l:end[1] - l:vcol
-    if a:kind ==# 'a' && l:n > 0
-      let l:n -= 1
-    endif
-    if l:n > 0
-      call s:send(repeat("\<Esc>[D", l:n))
+  if len(l:end) != 2 || line('.') !=# l:end[0] || l:vcol ># l:end[1]
+    return
+  endif
+  let l:n = l:end[1] - l:vcol
+  if a:after && l:n > 0
+    let l:n -= 1
+  endif
+  if l:n > 0
+    call s:send(repeat("\<Esc>[D", l:n))
+  endif
+endfunction
+
+" i/a from NAVIGATE: reposition to the navigated column, then resume typing
+" there. i lands before the char under the cursor; a one grapheme further right.
+function! s:resume(kind) abort
+  call s:lefts_to_cursor(a:kind ==# 'a')
+  call s:enter_job()
+endfunction
+
+" Delete from NAVIGATE. The shell owns the line, so we reposition its cursor and
+" fire the matching readline/zle kill, then drop into typing at the edit point
+" (the shell redraws the line). Works even when the input wraps across rows.
+"   x  char under cursor    dw  word forward    db  word back
+"   D  to end of line       dd  the whole (even wrapped) input line
+function! s:kill(what) abort
+  if a:what ==# 'line'
+    call s:send("\<C-e>\<C-u>")       " end, then discard to start = whole line
+  else
+    call s:lefts_to_cursor(0)
+    if a:what ==# 'char'
+      call s:send("\<Esc>[3~")        " delete-forward: the char under the cursor
+    elseif a:what ==# 'wordf'
+      call s:send("\<Esc>d")          " kill-word forward
+    elseif a:what ==# 'wordb'
+      call s:send("\<C-w>")           " kill-word backward
+    elseif a:what ==# 'toend'
+      call s:send("\<C-k>")           " kill to end of line
     endif
   endif
   call s:enter_job()
@@ -107,6 +151,12 @@ function! s:setup_keys() abort
   nnoremap <buffer><silent> i     <Cmd>call <SID>resume('i')<CR>
   nnoremap <buffer><silent> a     <Cmd>call <SID>resume('a')<CR>
   nnoremap <buffer><silent> P     <Cmd>call <SID>paste_and_type('"')<CR>
+  " Vim-ish deletes, translated to the shell's line editor
+  nnoremap <buffer><silent> x     <Cmd>call <SID>kill('char')<CR>
+  nnoremap <buffer><silent> D     <Cmd>call <SID>kill('toend')<CR>
+  nnoremap <buffer><silent> dd    <Cmd>call <SID>kill('line')<CR>
+  nnoremap <buffer><silent> dw    <Cmd>call <SID>kill('wordf')<CR>
+  nnoremap <buffer><silent> db    <Cmd>call <SID>kill('wordb')<CR>
 endfunction
 
 " NARROW sidebar/tree filetypes a terminal must never open INTO (it would
