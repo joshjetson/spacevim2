@@ -328,15 +328,16 @@ function! SpaceVim#layers#core#config() abort
         \ . string(s:_function('s:save_as_new_file')) . ', [])',
         \ 'save-as-new-file', 1)
   call SpaceVim#mapping#space#def('nnoremap', ['f', 'S'], 'wall', 'save-all-files', 1)
-  " Floating terminal (SpaceVim2): a simple, default space command for a
-  " terminal. SPC ' opens/toggles a centered floating modal on both editors.
-  " (The shell layer, if enabled, rebinds SPC ' to its split shell.)
+  " Terminal (SpaceVim2): SPC ' opens a terminal in the current window as a
+  " normal listed buffer -- open several and switch between them and your files
+  " with ordinary navigation. (The shell layer, if enabled, rebinds SPC ' to its
+  " split shell.)
   call SpaceVim#mapping#space#def('nnoremap', ["'"],
-        \ 'call SpaceVim#plugins#floaterm#toggle()', 'open-floating-terminal', 1)
-  command! -nargs=0 SPFloatTerm call SpaceVim#plugins#floaterm#toggle()
-  nnoremap <silent> <F12> :<C-u>call SpaceVim#plugins#floaterm#toggle()<CR>
+        \ 'call SpaceVim#plugins#floaterm#open()', 'open-terminal', 1)
+  command! -nargs=0 SPTerminal call SpaceVim#plugins#floaterm#open()
+  nnoremap <silent> <F12> :<C-u>call SpaceVim#plugins#floaterm#open()<CR>
   if has('nvim') || exists(':tnoremap') == 2
-    exe 'tnoremap <silent><F12> <C-\><C-n>:<C-u>call SpaceVim#plugins#floaterm#toggle()<CR>'
+    exe 'tnoremap <silent><F12> <C-\><C-n>:<C-u>call SpaceVim#plugins#floaterm#open()<CR>'
   endif
   " help mappings
   call SpaceVim#mapping#space#def('nnoremap', ['h', 'I'], 'call SpaceVim#issue#report()', 'report-issue-or-bug', 1)

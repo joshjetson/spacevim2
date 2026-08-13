@@ -1,41 +1,34 @@
-" vim<->nvim PARITY test for the SpaceVim2 floating terminal (Phase 1).
+" vim<->nvim PARITY test for the SpaceVim2 terminal.
 "
-" The modal is a popup terminal on Vim and a floating terminal on Neovim, but
-" its lifecycle must be identical: open shows it, hide closes the window but
-" KEEPS the session (terminal buffer + process) alive, reopen reuses that same
-" session, and close tears everything down. This locks that state machine on
-" both editors.
+" Terminals are plain LISTED buffers opened in the current window -- so you can
+" open several and switch between them and your files with ordinary buffer
+" navigation, identically on Vim (:terminal ++curwin) and Neovim (termopen).
+" This locks that behavior on both editors.
 "
-" status().open is truthy (v:true on nvim / 1 on vim) when shown and the literal
-" 0 when hidden, so open states use Assert and hidden states use AssertEqual ,0.
+" The terminals are opened in a throwaway window so the test runner's buffer is
+" not replaced.
 
-Execute ( SpaceVim floaterm: open -> hide keeps session -> reopen -> close ):
-  " starts closed, no session
-  let st = SpaceVim#plugins#floaterm#status()
-  AssertEqual st.open, 0
-  AssertEqual st.alive, 0
-
-  " open: modal is shown and a terminal session is alive
+Execute ( SpaceVim floaterm: opens listed terminal buffers, multiple, with modal keys ):
+  " first terminal, in a scratch window
+  new
   call SpaceVim#plugins#floaterm#open()
   let st = SpaceVim#plugins#floaterm#status()
-  Assert st.open, 'modal should be open after open()'
-  Assert st.alive, 'a terminal session should be alive after open()'
-  let g:_ft_first_buf = st.bufnr
+  Assert st.is_terminal, 'should be a terminal buffer'
+  Assert st.buflisted, 'terminal buffer must be listed (switchable like a file)'
+  Assert !empty(maparg('<Esc>', 't')), 'Esc -> navigate mapping is set on the terminal'
+  let g:_ft_b1 = st.bufnr
 
-  " hide: window closes, but the session (and its process) stays running
-  call SpaceVim#plugins#floaterm#hide()
-  let st = SpaceVim#plugins#floaterm#status()
-  AssertEqual st.open, 0
-  Assert st.alive, 'hide() must keep the session running'
-
-  " reopen: the SAME terminal buffer -> session preserved across a toggle
+  " a second one is a DISTINCT buffer -> multiple terminals allowed
+  new
   call SpaceVim#plugins#floaterm#open()
-  let st = SpaceVim#plugins#floaterm#status()
-  AssertEqual st.bufnr, g:_ft_first_buf
+  let st2 = SpaceVim#plugins#floaterm#status()
+  Assert st2.is_terminal
+  Assert st2.bufnr != g:_ft_b1, 'each open() creates a new terminal buffer'
 
-  " close: fully torn down
-  call SpaceVim#plugins#floaterm#close()
-  let st = SpaceVim#plugins#floaterm#status()
-  AssertEqual st.open, 0
-  AssertEqual st.alive, 0
-  unlet g:_ft_first_buf
+  " both remain alive -> you can switch back and forth like files
+  Assert bufexists(g:_ft_b1) && bufexists(st2.bufnr), 'both terminals persist'
+
+  " cleanup
+  silent! execute 'bwipeout! ' . st2.bufnr
+  silent! execute 'bwipeout! ' . g:_ft_b1
+  unlet g:_ft_b1
