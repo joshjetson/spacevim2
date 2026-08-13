@@ -16,23 +16,21 @@ scriptencoding utf-8
 " own input cursor (owned by the shell's line editor). Vim can't move the
 " shell's cursor directly, so we bridge the two:
 "
-"   i / a   -> TYPING, resuming at the column you navigated to on the input line
-"              (we translate Vim's column into shell left-arrows). i = before the
-"              char under the cursor, a = after it. On any other line it just
-"              resumes typing normally.
+"   i / a   -> TYPING, resuming where you navigated. i = before the char under the
+"              cursor, a = after it. I = line start, A = line end.
 "   x       -> delete the char under the cursor          (from NAVIGATE)
 "   dw / db -> delete the word forward / backward        (from NAVIGATE)
 "   D       -> delete from the cursor to end of line     (from NAVIGATE)
-"   dd      -> clear the whole input, even a multi-line paste  (from NAVIGATE)
+"   dd      -> delete the current line (2dd: several); single-line input clears
 "   v … d   -> highlight in visual mode, then d/x deletes the selection
-"
-" All of the above work on a multi-line paste too: left-arrows move one grapheme
-" back through the whole buffer (wrapping newlines), so we count characters across
-" rows (s:chars_to_end) to place the shell cursor, and dd floods backspaces to
-" wipe the block whole.
 "   <Esc>   -> NAVIGATE (Vim's Terminal-Normal): motions, visual select, y to copy
 "   <C-v>   -> paste the last yank while typing          (never auto-runs)
 "   P       -> (from NAVIGATE) paste the last yank and drop into TYPING (never runs)
+"
+" All of it works on a multi-line paste too: an arrow moves one grapheme through
+" the whole buffer (wrapping newlines), so we count characters across rows
+" (s:chars_between, signed) to place the shell cursor -- left OR right of it, which
+" is what lets editing continue after a delete leaves the cursor mid-line.
 "
 " Paste never executes: a linewise yank carries a trailing newline, and sending
 " a newline to a shell IS pressing Enter -- so we strip the trailing newline; a
@@ -115,49 +113,68 @@ function! s:row_input_end_vcol(row) abort
   return strdisplaywidth(l:left) + 1
 endfunction
 
-" Graphemes from a buffer position forward to the shell's input end (the recorded
-" cursor), walking the rows of a multi-line command in between. A left-arrow
-" moves one grapheme back through the whole buffer (wrapping newlines), so this
-" count is exactly how many left-arrows reach the position. -1 if out of range.
-function! s:chars_to_end(trow, tvcol) abort
-  let l:end = get(b:, 'ft_shell_end', [])
-  if len(l:end) != 2 || a:trow ># l:end[0] || a:trow <# 1
-    return -1
+" SIGNED graphemes from buffer position A to B (positive if B is AFTER A),
+" walking the rows of a multi-line command in between. A left/right-arrow moves
+" one grapheme through the whole buffer (wrapping newlines), so |result| is
+" exactly how many arrows reach B. s:INVALID if the span crosses a blank row.
+let s:INVALID = 1000000
+function! s:chars_between(ra, va, rb, vb) abort
+  if a:ra ==# a:rb
+    return a:vb - a:va
+  elseif a:ra ># a:rb
+    let l:d = s:chars_between(a:rb, a:vb, a:ra, a:va)
+    return l:d ==# s:INVALID ? s:INVALID : -l:d
   endif
-  if a:trow ==# l:end[0]
-    return l:end[1] - a:tvcol
-  endif
-  let l:n = s:row_input_end_vcol(a:trow) - a:tvcol + 1   " this row's tail + newline
-  let l:m = a:trow + 1
-  while l:m <# l:end[0]
+  " a:ra is above a:rb: count forward A -> B
+  let l:n = (s:row_input_end_vcol(a:ra) - a:va) + 1     " A to end of rowA + newline
+  let l:m = a:ra + 1
+  while l:m <# a:rb
     if empty(getline(l:m))
-      return -1
+      return s:INVALID
     endif
-    let l:n += s:row_input_end_vcol(l:m)                  " full row (col1..end) + newline
+    let l:n += s:row_input_end_vcol(l:m)                " full row (col1..end) + newline
     let l:m += 1
   endwhile
-  return l:n + l:end[1] - 1                               " end row: col1..end_vcol
+  return l:n + (a:vb - 1)                               " start of rowB to vb
 endfunction
 
-" Step the shell cursor left to the Vim cursor's position (crossing rows for a
-" multi-line command). after=1 stops one grapheme further right (AFTER the char).
-function! s:lefts_to_cursor(after) abort
-  let l:n = s:chars_to_end(line('.'), virtcol('.'))
-  if l:n <# 0
+" move the shell cursor by a signed grapheme delta: right-arrows if +, left if -.
+function! s:move_shell(delta) abort
+  if a:delta > 0
+    call s:send(repeat("\<Esc>[C", a:delta))
+  elseif a:delta < 0
+    call s:send(repeat("\<Esc>[D", -a:delta))
+  endif
+endfunction
+
+" Move the shell cursor from the recorded anchor to a buffer position (row, vcol).
+function! s:goto_pos(row, vcol) abort
+  let l:a = get(b:, 'ft_shell_end', [])
+  if len(l:a) != 2
     return
   endif
-  if a:after && l:n > 0
-    let l:n -= 1
-  endif
-  if l:n > 0
-    call s:send(repeat("\<Esc>[D", l:n))
+  let l:d = s:chars_between(l:a[0], l:a[1], a:row, a:vcol)
+  if l:d !=# s:INVALID
+    call s:move_shell(l:d)
   endif
 endfunction
 
-" i/a from NAVIGATE: reposition to the navigated column, then resume typing
-" there. i lands before the char under the cursor; a one grapheme further right.
+" Move the shell cursor to the Vim cursor's position. after=1 lands one grapheme
+" further right (AFTER the char under the cursor, for `a`).
+function! s:goto_cursor(after) abort
+  call s:goto_pos(line('.'), virtcol('.') + (a:after ? 1 : 0))
+endfunction
+
+" i/a/I/A from NAVIGATE: reposition, then resume typing.
+"   i before the cursor char   a after it   I start of the line   A end of the line
 function! s:resume(kind) abort
-  call s:lefts_to_cursor(a:kind ==# 'a')
+  if a:kind ==# 'A'
+    call s:goto_pos(line('.'), s:row_input_end_vcol(line('.')))
+  elseif a:kind ==# 'I'
+    call s:goto_pos(line('.'), 1)
+  else
+    call s:goto_cursor(a:kind ==# 'a')
+  endif
   call s:enter_job()
 endfunction
 
@@ -167,30 +184,86 @@ endfunction
 "   x  char under cursor    dw  word forward    db  word back
 "   D  to end of line       dd  the whole (even wrapped) input line
 function! s:kill(what) abort
-  if a:what ==# 'line'
-    " Clear the WHOLE current input, even a multi-line paste: flood backspaces
-    " (delete back to the input start, clamping there harmlessly) sized to the
-    " contiguous block above the shell cursor. The prompt is never touched.
-    let l:end = get(b:, 'ft_shell_end', [line('.'), col('.')])
-    let l:count = 0
-    let l:r = l:end[0]
-    while l:r >=# 1 && !empty(getline(l:r)) && (l:end[0] - l:r) <# 15
-      let l:count += strchars(getline(l:r)) + 1
-      let l:r -= 1
-    endwhile
-    call s:send(repeat(nr2char(127), l:count + 4))
-  else
-    call s:lefts_to_cursor(0)
-    if a:what ==# 'char'
-      call s:send("\<Esc>[3~")        " delete-forward: the char under the cursor
-    elseif a:what ==# 'wordf'
-      call s:send("\<Esc>d")          " kill-word forward
-    elseif a:what ==# 'wordb'
-      call s:send("\<C-w>")           " kill-word backward
-    elseif a:what ==# 'toend'
-      call s:send("\<C-k>")           " kill to end of line
-    endif
+  call s:goto_cursor(0)
+  if a:what ==# 'char'
+    call s:send("\<Esc>[3~")          " delete-forward: the char under the cursor
+  elseif a:what ==# 'wordf'
+    call s:send("\<Esc>d")            " kill-word forward
+  elseif a:what ==# 'wordb'
+    call s:send("\<C-w>")             " kill-word backward
+  elseif a:what ==# 'toend'
+    call s:send("\<C-k>")             " kill to end of line
   endif
+  call s:enter_job()
+endfunction
+
+" strchars of a row's rendered content, trailing padding trimmed
+function! s:row_len(row) abort
+  return strchars(substitute(getline(a:row), '\s\+$', '', ''))
+endfunction
+
+" A row carries the prompt (a right-side prompt shows as content, a 2+ space gap,
+" then more content). Only the FIRST input row has one; continuation rows don't.
+function! s:has_prompt(row) abort
+  return match(getline(a:row), '\v\S\s{2,}\S') >=# 0
+endfunction
+
+" The last row of the current input, found by walking DOWN from `from` while rows
+" are non-blank (empty terminal rows sit below the input). The shell cursor isn't
+" always on the last row -- e.g. after pasting mid-buffer -- so line-ops that need
+" to know the last row derive it here rather than trusting the cursor's row.
+function! s:last_input_row(from) abort
+  let l:r = a:from
+  while l:r <# line('$') && !empty(getline(l:r + 1)) && (l:r - a:from) <# 40
+    let l:r += 1
+  endwhile
+  return l:r
+endfunction
+
+" dd: delete the current physical line, like Vim. Uses delete-forward only (the
+" one line-editor key that behaves the same on bash and zsh). A count (2dd)
+" removes that many rows downward. The prompt row is special (col 1 is the
+" prompt, not input): on a single-line input dd clears it; deleting the first
+" line of a multi-line paste backspaces it off from the row below.
+function! s:kill_line() abort
+  let l:anchor = get(b:, 'ft_shell_end', [line('.'), virtcol('.')])
+  let l:row = line('.')
+  let l:last = s:last_input_row(l:anchor[0])           " true last input row
+  if s:has_prompt(l:row)
+    if l:row <# l:last
+      " first row of a multi-line command: park at the start of the next row and
+      " backspace off this row's input and its newline (clamps at the prompt)
+      let l:d = s:chars_between(l:anchor[0], l:anchor[1], l:row + 1, 1)
+      if l:d !=# s:INVALID
+        call s:move_shell(l:d)
+        call s:send(repeat(nr2char(127), s:row_input_end_vcol(l:row) + 2))
+      endif
+    else
+      " single-line input: clear it (backspaces before the cursor clamp at the
+      " prompt, delete-forwards clear anything after it)
+      let l:n = s:row_len(l:row) + 4
+      call s:send(repeat(nr2char(127), l:n) . repeat("\<Esc>[3~", l:n))
+    endif
+    call s:enter_job()
+    return
+  endif
+  " continuation row: delete cnt physical lines downward (content + a newline
+  " each; the buffer's last row uses a backspace for its preceding newline)
+  let l:cnt = min([v:count1, l:last - l:row + 1])
+  let l:d = s:chars_between(l:anchor[0], l:anchor[1], l:row, 1)
+  if l:d ==# s:INVALID
+    call s:enter_job()
+    return
+  endif
+  call s:move_shell(l:d)
+  let l:seq = ''
+  let l:i = 0
+  while l:i <# l:cnt
+    let l:seq .= repeat("\<Esc>[3~", s:row_len(l:row + l:i))
+    let l:seq .= (l:row + l:i) <# l:last ? "\<Esc>[3~" : nr2char(127)
+    let l:i += 1
+  endwhile
+  call s:send(l:seq)
   call s:enter_job()
 endfunction
 
@@ -198,19 +271,18 @@ endfunction
 " the first selected char, then delete-forward exactly the selected grapheme
 " count. Only handles a selection on the live input line; then drops into typing.
 function! s:visual_delete() abort
+  let l:a = get(b:, 'ft_shell_end', [])
   let l:p1 = getpos("'<")
   let l:p2 = getpos("'>")
   " clamp the end column onto a real char ('> may sit past EOL)
   let l:c2 = min([l:p2[2], max([1, len(getline(l:p2[1]))])])
-  let l:sc = s:chars_to_end(l:p1[1], virtcol([l:p1[1], l:p1[2]]))
-  let l:ec = s:chars_to_end(l:p2[1], virtcol([l:p2[1], l:c2]))
-  if l:sc >=# 0 && l:ec >=# 0
-    let l:n = l:sc - l:ec + 1              " selected graphemes (newlines included)
-    if l:sc > 0
-      call s:send(repeat("\<Esc>[D", l:sc))
-    endif
-    if l:n > 0
-      call s:send(repeat("\<Esc>[3~", l:n))
+  if len(l:a) == 2
+    let l:v1 = virtcol([l:p1[1], l:p1[2]])
+    let l:to_start = s:chars_between(l:a[0], l:a[1], l:p1[1], l:v1)
+    let l:span = s:chars_between(l:p1[1], l:v1, l:p2[1], virtcol([l:p2[1], l:c2]))
+    if l:to_start !=# s:INVALID && l:span !=# s:INVALID
+      call s:move_shell(l:to_start)             " park before the selection start
+      call s:send(repeat("\<Esc>[3~", l:span + 1))   " delete the selected graphemes
     endif
   endif
   call s:enter_job()
@@ -222,11 +294,13 @@ function! s:setup_keys() abort
   tnoremap <buffer><silent> <C-v> <Cmd>call <SID>paste('"')<CR>
   nnoremap <buffer><silent> i     <Cmd>call <SID>resume('i')<CR>
   nnoremap <buffer><silent> a     <Cmd>call <SID>resume('a')<CR>
+  nnoremap <buffer><silent> I     <Cmd>call <SID>resume('I')<CR>
+  nnoremap <buffer><silent> A     <Cmd>call <SID>resume('A')<CR>
   nnoremap <buffer><silent> P     <Cmd>call <SID>paste_and_type('"')<CR>
   " Vim-ish deletes, translated to the shell's line editor
   nnoremap <buffer><silent> x     <Cmd>call <SID>kill('char')<CR>
   nnoremap <buffer><silent> D     <Cmd>call <SID>kill('toend')<CR>
-  nnoremap <buffer><silent> dd    <Cmd>call <SID>kill('line')<CR>
+  nnoremap <buffer><silent> dd    <Cmd>call <SID>kill_line()<CR>
   nnoremap <buffer><silent> dw    <Cmd>call <SID>kill('wordf')<CR>
   nnoremap <buffer><silent> db    <Cmd>call <SID>kill('wordb')<CR>
   " delete a visual highlight (:<C-u> so '<,'> are set before the call)
