@@ -40,13 +40,16 @@ endfunction
 let s:file = expand('<sfile>:~')
 let s:lnum = expand('<slnum>') + 2
 function! SpaceVim#layers#shell#config() abort
-  call SpaceVim#mapping#space#def('nnoremap', ["'"], 'call call('
-        \ . string(function('s:open_default_shell')) . ', [0])',
-        \ ['open-shell',
+  " SpaceVim2: SPC ' opens the floaterm terminal (a normal buffer in the current
+  " window), so the terminal is the same whether or not this layer is enabled.
+  " (The split shell is still available on SPC " below.)
+  call SpaceVim#mapping#space#def('nnoremap', ["'"],
+        \ 'call SpaceVim#plugins#floaterm#open()',
+        \ ['open-terminal',
         \ [
-          \ "[SPC '] is to open or jump to default shell window",
-          \ '',
-          \ 'Definition: ' . s:file . ':' . s:lnum,
+          \ "[SPC '] opens a terminal buffer in the current window.",
+          \ 'Switch between terminals and files with normal buffer navigation',
+          \ '(the tabline, SPC b, :bnext). Open several for multiple terminals.',
           \ ]
           \ ], 1)
   call SpaceVim#mapping#space#def('nnoremap', ["\""], 'call call('
