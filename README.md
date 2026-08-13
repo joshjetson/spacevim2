@@ -13,13 +13,14 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPLv3-5fd7ff.svg" alt="GPLv3"/></a>
   <img src="https://img.shields.io/badge/editors-Vim%208.0+%20·%20Neovim%200.10+-8ab4ff.svg" alt="Vim 8.0+ and Neovim 0.10+"/>
-  <img src="https://img.shields.io/badge/tests-81%20on%20both%20editors-ff875f.svg" alt="81 tests on both editors"/>
+  <img src="https://img.shields.io/badge/tests-82%20on%20both%20editors-ff875f.svg" alt="82 tests on both editors"/>
   <img src="https://img.shields.io/badge/release-v2.5.0-3fb950.svg" alt="v2.5.0"/>
 </p>
 
 ## Contents
 
 - [Why SpaceVim2?](#why-spacevim2)
+- [SpaceVim2 exclusives](#spacevim2-exclusives)
 - [Requirements](#requirements)
 - [Install](#install)
 - [Quick start](#quick-start)
@@ -50,7 +51,44 @@ The original project is archived. **SpaceVim2 picks it up**, with three prioriti
   each one with a test that runs on *both* editors.
 - **Smaller and clearer.** ~630k lines of dead weight removed, dead abstractions
   collapsed, the vendored plugin set documented in [`bundle/`](bundle/README.md).
-- **Actually tested.** 81 checks run on **both** Vim and Neovim on every change.
+- **Actually tested.** 82 checks run on **both** Vim and Neovim on every change.
+
+## SpaceVim2 exclusives
+
+Capabilities the original SpaceVim never had. This is where SpaceVim2 grows —
+more to come.
+
+### A terminal you edit like a Vim buffer
+
+Press **`SPC '`** for a terminal. It's just a buffer: it opens full-window like a
+file, you switch to it (and between several) with ordinary buffer keys — `SPC b`,
+the tabline, `:bnext` — and you can keep as many open as you like.
+
+What sets it apart is that **the command line itself is Vim-editable**. A terminal
+has two modes:
+
+- **Type** *(default)* — keystrokes go straight to the shell.
+- **Navigate** — press **`Esc`** to drop into Vim's normal mode *over the live
+  command line*: move by word, delete, select, copy — then resume typing exactly
+  where you left off.
+
+| Navigate mode | Does |
+| --- | --- |
+| `i` · `a` | resume typing before · after the cursor |
+| `I` · `A` | resume typing at line start · end |
+| `x` | delete the character under the cursor |
+| `dw` · `db` | delete a word forward · backward |
+| `D` | delete to end of line |
+| `dd` · `2dd` | delete this line · several (in a multi-line command) |
+| `v` … `d` | visually select, then delete the highlight |
+| `y` | yank — copy a URL, a path, a chunk of output |
+| `b` `w` `e` `0` `$` `f{char}` | the usual Vim motions |
+
+**Paste never runs by accident.** `P` (in Navigate) or `Ctrl-V` (while typing)
+drops your last yank onto the prompt *without* executing it — and a **multi-line**
+paste arrives as one command to review, not a burst of auto-run lines.
+
+Same keys, same behavior on Vim and Neovim.
 
 ## Requirements
 
