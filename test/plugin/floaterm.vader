@@ -16,6 +16,8 @@ Execute ( SpaceVim floaterm: opens listed terminal buffers, multiple, with modal
   Assert st.is_terminal, 'should be a terminal buffer'
   Assert st.buflisted, 'terminal buffer must be listed (switchable like a file)'
   Assert !empty(maparg('<Esc>', 't')), 'Esc -> navigate mapping is set on the terminal'
+  Assert !empty(maparg('i', 'n')), 'i -> resume-typing-at-column mapping is set'
+  Assert !empty(maparg('P', 'n')), 'P -> paste-and-type mapping is set'
   let g:_ft_b1 = st.bufnr
 
   " a second one is a DISTINCT buffer -> multiple terminals allowed

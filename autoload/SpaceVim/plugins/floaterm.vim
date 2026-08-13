@@ -12,11 +12,21 @@ scriptencoding utf-8
 " them and your files with ordinary navigation: the tabline, `SPC b`, :bnext,
 " <C-w>. Nothing special about the window -- it's just a buffer.
 "
-" Inside a terminal:
-"   i / a   -> TYPING   (keys go to the shell; this is the default on open)
+" A terminal buffer has TWO cursors: Vim's (what NAVIGATE moves) and the shell's
+" own input cursor (owned by the shell's line editor). Vim can't move the
+" shell's cursor directly, so we bridge the two:
+"
+"   i / a   -> TYPING, resuming at the column you navigated to on the input line
+"              (we translate Vim's column into shell left-arrows). i = before the
+"              char under the cursor, a = after it. On any other line it just
+"              resumes typing normally.
 "   <Esc>   -> NAVIGATE (Vim's Terminal-Normal): motions, visual select, y to copy
-"   <C-v>   -> paste the last yank while typing
-"   P       -> (from NAVIGATE) paste the last yank and drop into TYPING
+"   <C-v>   -> paste the last yank while typing        (never auto-runs)
+"   P       -> (from NAVIGATE) paste the last yank and drop into TYPING (never runs)
+"
+" Paste never executes: a linewise yank carries a trailing newline, and sending
+" a newline to a shell IS pressing Enter -- so we strip the trailing newline and
+" the text just sits on the prompt for you to review.
 
 let s:count = 0
 
@@ -24,26 +34,79 @@ function! s:shell() abort
   return empty(&shell) ? 'sh' : &shell
 endfunction
 
-" send a register's text into THIS buffer's shell (a Vim yank can't be `p`-ed
-" into a terminal -- the shell owns its line -- so we feed the job directly).
-function! s:paste(reg) abort
-  let l:text = getreg(a:reg)
-  if empty(l:text)
+" low-level: send raw bytes straight to THIS buffer's shell job. A Vim yank can't
+" be `p`-ed into a terminal (the shell owns its line) so we feed the job directly.
+function! s:send(text) abort
+  if empty(a:text)
     return
   endif
   if has('nvim')
     let l:job = getbufvar('%', 'terminal_job_id', 0)
-    if l:job | call chansend(l:job, l:text) | endif
+    if l:job | call chansend(l:job, a:text) | endif
   else
-    call term_sendkeys(bufnr('%'), l:text)
+    call term_sendkeys(bufnr('%'), a:text)
   endif
+endfunction
+
+" enter Terminal-Job (TYPING) mode. feedkeys the built-in `i` (no remap) rather
+" than :startinsert -- startinsert doesn't take from inside a <Cmd> mapping, which
+" would leave us in read-only Terminal-Normal and silently drop typed keys.
+function! s:enter_job() abort
+  call feedkeys('i', 'n')
+endfunction
+
+" paste a register into the shell WITHOUT running it: strip the trailing newline
+" so a linewise yank lands on the prompt instead of executing.
+function! s:paste(reg) abort
+  call s:send(substitute(getreg(a:reg), '\r\?\n\+$', '', ''))
+endfunction
+
+function! s:paste_and_type(reg) abort
+  call s:paste(a:reg)
+  call s:enter_job()
+endfunction
+
+" On Esc we anchor where the shell's input cursor sits, so i/a can walk back to a
+" navigated column. We store the buffer line (for a same-line check) and the
+" cursor's SCREEN column. In Vim we read the true, UNCLAMPED position with
+" term_getcursor() -- Vim otherwise snaps Terminal-Normal onto the last char when
+" nothing is painted past the input, which a shell's right-prompt changes. Screen
+" columns (not byte columns) keep this correct under a multibyte prompt like `❯`.
+function! s:mark_end() abort
+  if !has('nvim') && exists('*term_getcursor')
+    let l:scol = term_getcursor(bufnr('%'))[1]
+  else
+    let l:scol = virtcol('.')
+  endif
+  let b:ft_shell_end = [line('.'), l:scol]
+endfunction
+
+" Resume TYPING at the navigated column: from the input end, step the shell
+" cursor left to the Vim cursor's screen column by sending that many left-arrows.
+" i lands before the char under the cursor; a is one grapheme further right. Only
+" meaningful on the same (live input) line we left from; else just resume typing.
+function! s:resume(kind) abort
+  let l:end = get(b:, 'ft_shell_end', [])
+  let l:vcol = virtcol('.')
+  if len(l:end) == 2 && line('.') ==# l:end[0] && l:vcol <=# l:end[1]
+    let l:n = l:end[1] - l:vcol
+    if a:kind ==# 'a' && l:n > 0
+      let l:n -= 1
+    endif
+    if l:n > 0
+      call s:send(repeat("\<Esc>[D", l:n))
+    endif
+  endif
+  call s:enter_job()
 endfunction
 
 " modal keys, buffer-local to each terminal (tnoremap fires in window terminals)
 function! s:setup_keys() abort
-  tnoremap <buffer><silent> <Esc> <C-\><C-n>
+  tnoremap <buffer><silent> <Esc> <C-\><C-n>:call <SID>mark_end()<CR>
   tnoremap <buffer><silent> <C-v> <Cmd>call <SID>paste('"')<CR>
-  nnoremap <buffer><silent> P     <Cmd>call <SID>paste('"')<CR>i
+  nnoremap <buffer><silent> i     <Cmd>call <SID>resume('i')<CR>
+  nnoremap <buffer><silent> a     <Cmd>call <SID>resume('a')<CR>
+  nnoremap <buffer><silent> P     <Cmd>call <SID>paste_and_type('"')<CR>
 endfunction
 
 " NARROW sidebar/tree filetypes a terminal must never open INTO (it would
