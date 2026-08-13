@@ -100,17 +100,25 @@ function! s:mark_end() abort
   let b:ft_shell_end = [line('.'), l:scol]
 endfunction
 
-" Screen col just past the last INPUT char on `row`. A right-side prompt sits
-" after a run of 2+ spaces (commands rarely contain double spaces), so cut there;
-" otherwise the last non-blank. Continuation rows have neither prompt, so this is
-" just their content width.
+" width of the terminal's window (the columns the shell renders into)
+function! s:term_width() abort
+  let l:w = winwidth(0)
+  return l:w > 0 ? l:w : &columns
+endfunction
+
+" Screen col just past the last INPUT char on `row`. Only the prompt row's trailing
+" right-prompt is stripped (cut at its wide gap); every other row uses its full
+" content width -- so a double space INSIDE the input (e.g. left by deleting a
+" word) is never mistaken for the gap before a right-prompt.
 function! s:row_input_end_vcol(row) abort
   let l:line = getline(a:row)
-  let l:left = matchstr(l:line, '\v^.{-}\ze\s{2,}\S')
-  if empty(l:left)
-    let l:left = substitute(l:line, '\s\+$', '', '')
+  if s:has_prompt(a:row)
+    let l:left = matchstr(l:line, '\v^.{-}\ze\s{2,}\S')
+    if !empty(l:left)
+      return strdisplaywidth(l:left) + 1
+    endif
   endif
-  return strdisplaywidth(l:left) + 1
+  return strdisplaywidth(substitute(l:line, '\s\+$', '', '')) + 1
 endfunction
 
 " SIGNED graphemes from buffer position A to B (positive if B is AFTER A),
@@ -202,10 +210,16 @@ function! s:row_len(row) abort
   return strchars(substitute(getline(a:row), '\s\+$', '', ''))
 endfunction
 
-" A row carries the prompt (a right-side prompt shows as content, a 2+ space gap,
-" then more content). Only the FIRST input row has one; continuation rows don't.
+" A row carries a right-side prompt: content, a 2+ space GAP, then a trailing
+" segment that reaches the right edge. The edge test is what tells a real right-
+" prompt apart from a mid-line double space left by deleting a word/line. Only the
+" FIRST input row has one; continuation rows don't.
 function! s:has_prompt(row) abort
-  return match(getline(a:row), '\v\S\s{2,}\S') >=# 0
+  let l:line = getline(a:row)
+  if match(l:line, '\v\S\s{2,}\S') <# 0
+    return 0
+  endif
+  return strdisplaywidth(substitute(l:line, '\s\+$', '', '')) >=# s:term_width() - 8
 endfunction
 
 " The last row of the current input, found by walking DOWN from `from` while rows
