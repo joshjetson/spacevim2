@@ -79,6 +79,20 @@ function! s:reset_session() abort
   let s:jobid = -1
 endfunction
 
+" send a register's text into the running shell (this is how a Vim yank gets
+" pasted INTO the terminal -- the shell owns its line, so we feed it the job).
+function! s:paste(reg) abort
+  let l:text = getreg(a:reg)
+  if empty(l:text)
+    return
+  endif
+  if has('nvim')
+    if s:jobid > 0 | call chansend(s:jobid, l:text) | endif
+  else
+    call term_sendkeys(s:bufnr, l:text)
+  endif
+endfunction
+
 " map the modal keys on the terminal buffer. These fire in nvim floats and vim
 " windows (but never in vim popups). <C-\><C-n> reaches Terminal-Normal on both
 " editors, so the mappings are shared.
@@ -86,8 +100,12 @@ function! s:setup_keys() abort
   " from TYPING mode (Terminal-Job):
   tnoremap <buffer><silent> <Esc> <C-\><C-n>
   tnoremap <buffer><silent> <F12> <C-\><C-n>:call SpaceVim#plugins#floaterm#hide()<CR>
+  " paste the last yank into the shell (y in NAVIGATE copies; C-v pastes it back)
+  tnoremap <buffer><silent> <C-v> <Cmd>call <SID>paste('"')<CR>
   " from NAVIGATE mode (Terminal-Normal is a normal mode):
   nnoremap <buffer><silent> <F12> :<C-u>call SpaceVim#plugins#floaterm#hide()<CR>
+  " P in NAVIGATE mode: paste the yank into the shell and drop into TYPING
+  nnoremap <buffer><silent> P <Cmd>call <SID>paste('"')<CR>i
 endfunction
 
 function! SpaceVim#plugins#floaterm#open() abort
