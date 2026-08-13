@@ -46,8 +46,37 @@ function! s:setup_keys() abort
   nnoremap <buffer><silent> P     <Cmd>call <SID>paste('"')<CR>i
 endfunction
 
-" open a fresh terminal in the current window, as a normal listed buffer
+" sidebar filetypes a terminal must never open INTO (it would inherit the tree's
+" narrow size/position). Opening from one of these should behave like opening a
+" file: jump to a normal editing window first.
+let s:sidebars = ['nerdtree', 'defx', 'vimfiler', 'NvimTree', 'neo-tree', 'startify',
+      \ 'tagbar', 'vista', 'vista_kind', 'undotree', 'Mundo', 'SpaceVimFileTree']
+
+function! s:is_sidebar(winid) abort
+  return index(s:sidebars, getbufvar(winbufnr(a:winid), '&filetype')) >= 0
+endfunction
+
+" move out of a file-tree / sidebar window so the terminal opens like a file
+function! s:goto_editable() abort
+  if !s:is_sidebar(win_getid())
+    return
+  endif
+  wincmd p
+  if s:is_sidebar(win_getid())
+    for l:w in range(1, winnr('$'))
+      if !s:is_sidebar(win_getid(l:w))
+        execute l:w . 'wincmd w'
+        return
+      endif
+    endfor
+    " every window is a sidebar -> open a normal split to hold the terminal
+    wincmd l
+  endif
+endfunction
+
+" open a fresh terminal in a normal editing window, as a listed buffer
 function! SpaceVim#plugins#floaterm#open() abort
+  call s:goto_editable()
   if has('nvim')
     enew
     call termopen(s:shell())
