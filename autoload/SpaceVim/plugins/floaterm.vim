@@ -46,31 +46,37 @@ function! s:setup_keys() abort
   nnoremap <buffer><silent> P     <Cmd>call <SID>paste('"')<CR>i
 endfunction
 
-" sidebar filetypes a terminal must never open INTO (it would inherit the tree's
-" narrow size/position). Opening from one of these should behave like opening a
-" file: jump to a normal editing window first.
-let s:sidebars = ['nerdtree', 'defx', 'vimfiler', 'NvimTree', 'neo-tree', 'startify',
+" NARROW sidebar/tree filetypes a terminal must never open INTO (it would
+" inherit the tree's narrow size). NOTE: startify (the full-window dashboard) is
+" deliberately NOT here -- opening a terminal from the dashboard should replace
+" it, exactly like opening a file does.
+let s:sidebars = ['nerdtree', 'defx', 'vimfiler', 'NvimTree', 'neo-tree',
       \ 'tagbar', 'vista', 'vista_kind', 'undotree', 'Mundo', 'SpaceVimFileTree']
 
 function! s:is_sidebar(winid) abort
   return index(s:sidebars, getbufvar(winbufnr(a:winid), '&filetype')) >= 0
 endfunction
 
-" move out of a file-tree / sidebar window so the terminal opens like a file
+" if the current window is a narrow tree/sidebar, hop to the MAIN editing window
+" (the biggest non-sidebar window) so the terminal opens like a file, full size.
 function! s:goto_editable() abort
   if !s:is_sidebar(win_getid())
     return
   endif
-  wincmd p
-  if s:is_sidebar(win_getid())
-    for l:w in range(1, winnr('$'))
-      if !s:is_sidebar(win_getid(l:w))
-        execute l:w . 'wincmd w'
-        return
+  let l:best = 0
+  let l:best_area = -1
+  for l:w in range(1, winnr('$'))
+    let l:id = win_getid(l:w)
+    if !s:is_sidebar(l:id)
+      let l:area = winwidth(l:id) * winheight(l:id)
+      if l:area > l:best_area
+        let l:best_area = l:area
+        let l:best = l:id
       endif
-    endfor
-    " every window is a sidebar -> open a normal split to hold the terminal
-    wincmd l
+    endif
+  endfor
+  if l:best
+    call win_gotoid(l:best)
   endif
 endfunction
 
