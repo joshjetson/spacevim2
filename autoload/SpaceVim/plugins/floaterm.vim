@@ -43,8 +43,30 @@ function! s:is_open() abort
   return has('nvim') ? nvim_win_is_valid(s:winid) : !empty(popup_getpos(s:winid))
 endfunction
 
-function! s:term_alive() abort
-  return s:bufnr > 0 && bufexists(s:bufnr)
+" a LIVE session = the buffer exists AND its shell job is still running. After
+" the user types `exit`, the terminal buffer can linger as a finished ("Process
+" exited") buffer; treat that as dead so the next open() starts a fresh shell.
+function! s:session_running() abort
+  if s:bufnr <= 0 || !bufexists(s:bufnr)
+    return 0
+  endif
+  if has('nvim')
+    return s:jobid > 0 && jobwait([s:jobid], 0)[0] == -1
+  else
+    return term_getstatus(s:bufnr) =~# 'running'
+  endif
+endfunction
+
+" tear down the current session: stop the job, wipe the buffer, clear state
+function! s:reset_session() abort
+  if s:bufnr > 0 && bufexists(s:bufnr)
+    if has('nvim') && s:jobid > 0
+      silent! call jobstop(s:jobid)
+    endif
+    silent! execute 'bwipeout! ' . s:bufnr
+  endif
+  let s:bufnr = -1
+  let s:jobid = -1
 endfunction
 
 function! s:shell() abort
@@ -62,10 +84,15 @@ function! SpaceVim#plugins#floaterm#open() abort
     endif
     return
   endif
+  " previous shell exited? drop the dead buffer so we open a fresh terminal
+  if !s:session_running()
+    call s:reset_session()
+  endif
   let [w, h, c, r] = s:geometry()
   if has('nvim')
-    if !s:term_alive()
+    if s:bufnr <= 0 || !bufexists(s:bufnr)
       let s:bufnr = nvim_create_buf(v:false, v:true)
+      let s:jobid = -1
     endif
     let l:conf = {
           \ 'relative'  : 'editor',
@@ -90,7 +117,7 @@ function! SpaceVim#plugins#floaterm#open() abort
     endif
     startinsert
   else
-    if !s:term_alive()
+    if s:bufnr <= 0 || !bufexists(s:bufnr)
       let s:bufnr = term_start(s:shell(), {
             \ 'hidden'      : 1,
             \ 'term_finish' : 'close',
@@ -143,19 +170,12 @@ endfunction
 " fully close: hide the modal, stop the job, wipe the terminal buffer
 function! SpaceVim#plugins#floaterm#close() abort
   call SpaceVim#plugins#floaterm#hide()
-  if s:term_alive()
-    if has('nvim') && s:jobid > 0
-      silent! call jobstop(s:jobid)
-    endif
-    silent! execute 'bwipeout! ' . s:bufnr
-  endif
-  let s:bufnr = -1
-  let s:jobid = -1
+  call s:reset_session()
 endfunction
 
 " reported state, for tests/probes
 function! SpaceVim#plugins#floaterm#status() abort
-  return {'open' : s:is_open(), 'winid' : s:winid, 'bufnr' : s:bufnr, 'alive' : s:term_alive()}
+  return {'open' : s:is_open(), 'winid' : s:winid, 'bufnr' : s:bufnr, 'alive' : s:session_running()}
 endfunction
 
 " vim:set et sw=2 cc=80:
