@@ -159,12 +159,15 @@ function! s:open_vim() abort
           \ })
     call setbufvar(s:bufnr, '&bufhidden', 'hide')
   endif
-  " a large window (popups can't take key maps); big enough to feel modal
+  " a bottom panel (popups can't take key maps, so it's a real window). Kept to
+  " a modest height so it coexists with the file tree + editor instead of
+  " bulldozing them; height is configurable via g:_spacevim_floaterm_height (%).
   botright split
   execute 'buffer ' . s:bufnr
-  execute 'resize ' . max([float2nr(&lines * 0.85), 6])
+  let l:pct = get(g:, '_spacevim_floaterm_height', 30)
+  execute 'resize ' . max([float2nr(&lines * l:pct / 100), 6])
   let s:winid = win_getid()
-  setlocal winfixheight nonumber norelativenumber signcolumn=no
+  setlocal winfixheight nonumber norelativenumber signcolumn=no nobuflisted
   call s:setup_keys()
   " default NAVIGATE mode: leave the terminal in Terminal-Normal (do not enter
   " job mode). Showing the buffer keeps us in normal mode; i / a starts typing.
