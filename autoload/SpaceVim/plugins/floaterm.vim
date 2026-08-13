@@ -23,8 +23,13 @@ scriptencoding utf-8
 "   x       -> delete the char under the cursor          (from NAVIGATE)
 "   dw / db -> delete the word forward / backward        (from NAVIGATE)
 "   D       -> delete from the cursor to end of line     (from NAVIGATE)
-"   dd      -> clear the whole input line, even wrapped  (from NAVIGATE)
+"   dd      -> clear the whole input, even a multi-line paste  (from NAVIGATE)
 "   v … d   -> highlight in visual mode, then d/x deletes the selection
+"
+" All of the above work on a multi-line paste too: left-arrows move one grapheme
+" back through the whole buffer (wrapping newlines), so we count characters across
+" rows (s:chars_to_end) to place the shell cursor, and dd floods backspaces to
+" wipe the block whole.
 "   <Esc>   -> NAVIGATE (Vim's Terminal-Normal): motions, visual select, y to copy
 "   <C-v>   -> paste the last yank while typing          (never auto-runs)
 "   P       -> (from NAVIGATE) paste the last yank and drop into TYPING (never runs)
@@ -97,16 +102,50 @@ function! s:mark_end() abort
   let b:ft_shell_end = [line('.'), l:scol]
 endfunction
 
-" Step the shell cursor left from the input end to the Vim cursor's screen
-" column, by sending that many left-arrows. after=1 stops one grapheme further
-" right (AFTER the cursor char). No-op unless we're on the recorded input line.
-function! s:lefts_to_cursor(after) abort
+" Screen col just past the last INPUT char on `row`. A right-side prompt sits
+" after a run of 2+ spaces (commands rarely contain double spaces), so cut there;
+" otherwise the last non-blank. Continuation rows have neither prompt, so this is
+" just their content width.
+function! s:row_input_end_vcol(row) abort
+  let l:line = getline(a:row)
+  let l:left = matchstr(l:line, '\v^.{-}\ze\s{2,}\S')
+  if empty(l:left)
+    let l:left = substitute(l:line, '\s\+$', '', '')
+  endif
+  return strdisplaywidth(l:left) + 1
+endfunction
+
+" Graphemes from a buffer position forward to the shell's input end (the recorded
+" cursor), walking the rows of a multi-line command in between. A left-arrow
+" moves one grapheme back through the whole buffer (wrapping newlines), so this
+" count is exactly how many left-arrows reach the position. -1 if out of range.
+function! s:chars_to_end(trow, tvcol) abort
   let l:end = get(b:, 'ft_shell_end', [])
-  let l:vcol = virtcol('.')
-  if len(l:end) != 2 || line('.') !=# l:end[0] || l:vcol ># l:end[1]
+  if len(l:end) != 2 || a:trow ># l:end[0] || a:trow <# 1
+    return -1
+  endif
+  if a:trow ==# l:end[0]
+    return l:end[1] - a:tvcol
+  endif
+  let l:n = s:row_input_end_vcol(a:trow) - a:tvcol + 1   " this row's tail + newline
+  let l:m = a:trow + 1
+  while l:m <# l:end[0]
+    if empty(getline(l:m))
+      return -1
+    endif
+    let l:n += s:row_input_end_vcol(l:m)                  " full row (col1..end) + newline
+    let l:m += 1
+  endwhile
+  return l:n + l:end[1] - 1                               " end row: col1..end_vcol
+endfunction
+
+" Step the shell cursor left to the Vim cursor's position (crossing rows for a
+" multi-line command). after=1 stops one grapheme further right (AFTER the char).
+function! s:lefts_to_cursor(after) abort
+  let l:n = s:chars_to_end(line('.'), virtcol('.'))
+  if l:n <# 0
     return
   endif
-  let l:n = l:end[1] - l:vcol
   if a:after && l:n > 0
     let l:n -= 1
   endif
@@ -129,7 +168,17 @@ endfunction
 "   D  to end of line       dd  the whole (even wrapped) input line
 function! s:kill(what) abort
   if a:what ==# 'line'
-    call s:send("\<C-e>\<C-u>")       " end, then discard to start = whole line
+    " Clear the WHOLE current input, even a multi-line paste: flood backspaces
+    " (delete back to the input start, clamping there harmlessly) sized to the
+    " contiguous block above the shell cursor. The prompt is never touched.
+    let l:end = get(b:, 'ft_shell_end', [line('.'), col('.')])
+    let l:count = 0
+    let l:r = l:end[0]
+    while l:r >=# 1 && !empty(getline(l:r)) && (l:end[0] - l:r) <# 15
+      let l:count += strchars(getline(l:r)) + 1
+      let l:r -= 1
+    endwhile
+    call s:send(repeat(nr2char(127), l:count + 4))
   else
     call s:lefts_to_cursor(0)
     if a:what ==# 'char'
@@ -149,17 +198,16 @@ endfunction
 " the first selected char, then delete-forward exactly the selected grapheme
 " count. Only handles a selection on the live input line; then drops into typing.
 function! s:visual_delete() abort
-  let l:end = get(b:, 'ft_shell_end', [])
   let l:p1 = getpos("'<")
   let l:p2 = getpos("'>")
-  if len(l:end) == 2 && l:p1[1] ==# l:end[0] && l:p2[1] ==# l:end[0]
-    let l:line = getline(l:end[0])
-    let l:c1 = l:p1[2]
-    let l:c2 = min([l:p2[2], len(l:line)])   " '> can sit past EOL; clamp
-    let l:n = strchars(strpart(l:line, l:c1 - 1, l:c2 - l:c1 + 1))
-    let l:lefts = l:end[1] - virtcol([l:end[0], l:c1])
-    if l:lefts > 0
-      call s:send(repeat("\<Esc>[D", l:lefts))
+  " clamp the end column onto a real char ('> may sit past EOL)
+  let l:c2 = min([l:p2[2], max([1, len(getline(l:p2[1]))])])
+  let l:sc = s:chars_to_end(l:p1[1], virtcol([l:p1[1], l:p1[2]]))
+  let l:ec = s:chars_to_end(l:p2[1], virtcol([l:p2[1], l:c2]))
+  if l:sc >=# 0 && l:ec >=# 0
+    let l:n = l:sc - l:ec + 1              " selected graphemes (newlines included)
+    if l:sc > 0
+      call s:send(repeat("\<Esc>[D", l:sc))
     endif
     if l:n > 0
       call s:send(repeat("\<Esc>[3~", l:n))
