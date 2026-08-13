@@ -12,14 +12,13 @@ jobs:
                 vimtag: v8.2.3995
               - vimbin: vim
                 vimtag: v9.1.0000
+              # nvim floor is 0.10 (see README + the version-pinned layers);
+              # test the floor and a current release. Older nvim and the
+              # bleeding-edge nightly are intentionally not in the matrix.
               - vimbin: nvim
-                vimtag: nightly
+                vimtag: v0.10.0
               - vimbin: nvim
-                vimtag: v0.9.1
-              - vimbin: nvim
-                vimtag: v0.8.3
-              - vimbin: nvim
-                vimtag: v0.7.0
+                vimtag: v0.11.3
     runs-on: ubuntu-22.04
     env:
         VIM_BIN: ${{ matrix.vimbin }}

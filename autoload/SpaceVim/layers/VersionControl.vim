@@ -95,7 +95,10 @@ function! s:git_branch() abort
     endtry
   else
       let prefix = g:spacevim_statusline_unicode ? '' : ''
-      return printf('%%{git#branch#current("%s")}', prefix)
+      " guard the call: git#branch#current comes from the git plugin, which may
+      " not be loaded (e.g. a terminal opens and refreshes the statusline before
+      " the git layer is present) -- an unguarded %{...} then throws E117.
+      return printf('%%{exists("*git#branch#current") ? git#branch#current("%s") : ""}', prefix)
   endif
   return ''
 endfunction

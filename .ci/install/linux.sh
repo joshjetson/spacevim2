@@ -37,13 +37,16 @@ install_nvim() {
     local tmp="$(mktemp -d)"
     local out="${DEPS}/_neovim/$tag"
     mkdir -p $out
-    if [[ $tag == "nightly" ]]; then
-      curl  -o $tmp/nvim-linux-x86_64.tar.gz -L "https://github.com/neovim/neovim/releases/download/$tag/nvim-linux-x86_64.tar.gz"
-      tar -xzvf $tmp/nvim-linux-x86_64.tar.gz -C $tmp
+    # nvim renamed the linux release asset (and its top-level dir) from
+    # nvim-linux64 to nvim-linux-x86_64 in newer releases. Try the new name
+    # first, fall back to the old one, so any tag installs.
+    local base="https://github.com/neovim/neovim/releases/download/$tag"
+    if curl -fsSL -o $tmp/nvim.tar.gz "$base/nvim-linux-x86_64.tar.gz"; then
+      tar -xzf $tmp/nvim.tar.gz -C $tmp
       cp -r $tmp/nvim-linux-x86_64/* $out
     else
-      curl  -o $tmp/nvim-linux64.tar.gz -L "https://github.com/neovim/neovim/releases/download/$tag/nvim-linux64.tar.gz"
-      tar -xzvf $tmp/nvim-linux64.tar.gz -C $tmp
+      curl -fsSL -o $tmp/nvim.tar.gz "$base/nvim-linux64.tar.gz"
+      tar -xzf $tmp/nvim.tar.gz -C $tmp
       cp -r $tmp/nvim-linux64/* $out
     fi
     chmod +x $out/bin/nvim

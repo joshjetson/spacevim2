@@ -67,7 +67,7 @@ function! SpaceVim#plugins#floaterm#open() abort
     if !s:term_alive()
       let s:bufnr = nvim_create_buf(v:false, v:true)
     endif
-    let s:winid = nvim_open_win(s:bufnr, v:true, {
+    let l:conf = {
           \ 'relative'  : 'editor',
           \ 'width'     : w,
           \ 'height'    : h,
@@ -75,9 +75,14 @@ function! SpaceVim#plugins#floaterm#open() abort
           \ 'row'       : r,
           \ 'style'     : 'minimal',
           \ 'border'    : 'rounded',
-          \ 'title'     : ' ❯ spacevim2 · terminal ',
-          \ 'title_pos' : 'center',
-          \ })
+          \ }
+    " 'title' / 'title_pos' only exist on nvim >= 0.9; passing them on older
+    " nvim raises E5555. Add them only when supported so the float still opens.
+    if has('nvim-0.9.0')
+      let l:conf.title = ' ❯ spacevim2 · terminal '
+      let l:conf.title_pos = 'center'
+    endif
+    let s:winid = nvim_open_win(s:bufnr, v:true, l:conf)
     call setwinvar(s:winid, '&winhighlight', 'FloatBorder:SpaceVim_floaterm_border,FloatTitle:SpaceVim_floaterm_border')
     if s:jobid <= 0
       " termopen() turns the current (float) buffer into a terminal
