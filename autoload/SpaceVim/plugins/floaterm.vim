@@ -51,19 +51,6 @@ function! s:shell() abort
   return empty(&shell) ? 'sh' : &shell
 endfunction
 
-" Vim only: while the popup terminal has focus, keystrokes go straight to the
-" shell, so terminal-mode mappings never fire. This popup filter intercepts the
-" toggle key (<F12>) and hides the modal from inside -- keeping the session --
-" mirroring Neovim's terminal-mode <F12> mapping. Every other key passes through
-" to the terminal (return 0).
-function! s:popup_filter(winid, key) abort
-  if a:key ==# "\<F12>"
-    " defer a tick so we don't close the popup from inside its own filter
-    call timer_start(0, {-> SpaceVim#plugins#floaterm#hide()})
-    return 1
-  endif
-  return 0
-endfunction
 
 " open (or reveal) the floating terminal; keeps the session alive across toggles
 function! SpaceVim#plugins#floaterm#open() abort
@@ -115,12 +102,15 @@ function! SpaceVim#plugins#floaterm#open() abort
           \ 'border'          : [1,1,1,1],
           \ 'borderchars'     : ['─','│','─','│','╭','╮','╯','╰'],
           \ 'borderhighlight' : ['SpaceVim_floaterm_border'],
-          \ 'title'           : ' ❯ spacevim2 · terminal  (F12 to toggle) ',
+          \ 'title'           : ' ❯ spacevim2 · terminal   (C-\ C-n then q) ',
           \ 'highlight'       : 'Normal',
           \ 'zindex'          : 200,
-          \ 'mapping'         : 0,
-          \ 'filter'          : function('s:popup_filter'),
           \ })
+    " Vim routes popup-terminal keystrokes straight to the shell; the only way
+    " out is the built-in <C-\><C-n> / <C-W>N to Terminal-Normal mode. Once
+    " there these buffer-local normal mappings hide the modal (session survives).
+    call win_execute(s:winid, 'nnoremap <buffer><silent> <F12> :call SpaceVim#plugins#floaterm#hide()<CR>')
+    call win_execute(s:winid, 'nnoremap <buffer><silent> q :call SpaceVim#plugins#floaterm#hide()<CR>')
   endif
 endfunction
 
