@@ -24,6 +24,7 @@ scriptencoding utf-8
 "   dw / db -> delete the word forward / backward        (from NAVIGATE)
 "   D       -> delete from the cursor to end of line     (from NAVIGATE)
 "   dd      -> clear the whole input line, even wrapped  (from NAVIGATE)
+"   v … d   -> highlight in visual mode, then d/x deletes the selection
 "   <Esc>   -> NAVIGATE (Vim's Terminal-Normal): motions, visual select, y to copy
 "   <C-v>   -> paste the last yank while typing          (never auto-runs)
 "   P       -> (from NAVIGATE) paste the last yank and drop into TYPING (never runs)
@@ -144,6 +145,29 @@ function! s:kill(what) abort
   call s:enter_job()
 endfunction
 
+" Delete a VISUAL selection (v-highlight then d/x). Park the shell cursor before
+" the first selected char, then delete-forward exactly the selected grapheme
+" count. Only handles a selection on the live input line; then drops into typing.
+function! s:visual_delete() abort
+  let l:end = get(b:, 'ft_shell_end', [])
+  let l:p1 = getpos("'<")
+  let l:p2 = getpos("'>")
+  if len(l:end) == 2 && l:p1[1] ==# l:end[0] && l:p2[1] ==# l:end[0]
+    let l:line = getline(l:end[0])
+    let l:c1 = l:p1[2]
+    let l:c2 = min([l:p2[2], len(l:line)])   " '> can sit past EOL; clamp
+    let l:n = strchars(strpart(l:line, l:c1 - 1, l:c2 - l:c1 + 1))
+    let l:lefts = l:end[1] - virtcol([l:end[0], l:c1])
+    if l:lefts > 0
+      call s:send(repeat("\<Esc>[D", l:lefts))
+    endif
+    if l:n > 0
+      call s:send(repeat("\<Esc>[3~", l:n))
+    endif
+  endif
+  call s:enter_job()
+endfunction
+
 " modal keys, buffer-local to each terminal (tnoremap fires in window terminals)
 function! s:setup_keys() abort
   tnoremap <buffer><silent> <Esc> <C-\><C-n>:call <SID>mark_end()<CR>
@@ -157,6 +181,9 @@ function! s:setup_keys() abort
   nnoremap <buffer><silent> dd    <Cmd>call <SID>kill('line')<CR>
   nnoremap <buffer><silent> dw    <Cmd>call <SID>kill('wordf')<CR>
   nnoremap <buffer><silent> db    <Cmd>call <SID>kill('wordb')<CR>
+  " delete a visual highlight (:<C-u> so '<,'> are set before the call)
+  xnoremap <buffer><silent> d     :<C-u>call <SID>visual_delete()<CR>
+  xnoremap <buffer><silent> x     :<C-u>call <SID>visual_delete()<CR>
 endfunction
 
 " NARROW sidebar/tree filetypes a terminal must never open INTO (it would
