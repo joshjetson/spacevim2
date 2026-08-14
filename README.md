@@ -56,7 +56,7 @@ The original project is archived. **SpaceVim2 picks it up**, with three prioriti
 ## SpaceVim2 exclusives
 
 Capabilities the original SpaceVim never had. This is where SpaceVim2 grows —
-more to come.
+more to come. **[See it live →](https://joshjetson.github.io/spacevim2/)**
 
 ### A terminal you edit like a Vim buffer
 
