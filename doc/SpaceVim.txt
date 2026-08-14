@@ -331,6 +331,8 @@ HIGHLIGHTED FEATURES                                       *SpaceVim-features*
     prefixes.
   7. Lower the risk of RSI: Heavily using the `<Space>` key instead of
     modifiers.
+  8. Vim-editable terminal: a SpaceVim2 exclusive -- the shell command line is
+    editable with Vim keys. See |SpaceVim-terminal|.
 
 ==============================================================================
 UPDATE AND ROLLBACK                             *SpaceVim-update-and-rollback*
@@ -6170,8 +6172,9 @@ text by highlighting.
 ==============================================================================
 SHELL                                                  *SpaceVim-layers-shell*
 
-SpaceVim uses deol.nvim for shell support in neovim and uses vimshell for vim.
-For more info, read |deol| and |vimshell|.
+In SpaceVim2, `SPC '` opens a terminal as an ordinary, listed buffer -- see
+|SpaceVim-terminal| for the Vim-style editing it supports. `SPC "` opens a shell
+split in the current file's directory.
 
 LAYER OPTIONS
 
@@ -6181,10 +6184,41 @@ KEY BINDINGS
 
 >
   Key bindings    Description
-  SPC '           Open or switch to terminal windows
-  q               Hide terminal windows in normal mode
-  ctrl-`          Hide terminal window in terminal mode
+  SPC '           open a terminal buffer in the current window
+  SPC "           open a shell split with the current file's directory
 <
+
+==============================================================================
+TERMINAL                                                    *SpaceVim-terminal*
+
+`SPC '` (also `:SPTerminal`, or `<F12>`) opens a terminal as a normal, listed
+buffer -- a SpaceVim2 exclusive. It fills the window like a file, and you switch
+to it, and between several, with ordinary buffer navigation (the tabline,
+`SPC b`, `:bnext`, `<C-w>`). It behaves the same on Vim and Neovim.
+
+The command line itself is Vim-editable. A terminal buffer has two modes:
+
+  - TYPING (the default): keystrokes go straight to the shell.
+  - NAVIGATE: press <Esc> for Vim's Terminal-Normal mode over the live command
+    line -- motions, delete, visual select, yank -- then resume typing where you
+    left off.
+
+From NAVIGATE mode:
+>
+  i / a           resume typing before / after the char under the cursor
+  I / A           resume typing at the start / end of the line
+  x               delete the character under the cursor
+  dw / db         delete a word forward / backward
+  D               delete from the cursor to the end of the line
+  dd / 2dd        delete this line / several (of a multi-line command)
+  v {motion} d    visually select, then delete the highlight
+  y               yank (copy) -- e.g. a URL, a path, a chunk of output
+  b w e 0 $ f     the usual Vim motions
+<
+
+Paste never runs by accident: `P` (from NAVIGATE) or CTRL-V (while typing) drops
+the last yank onto the prompt without executing it, and a multi-line paste
+arrives as one command to review -- not a burst of auto-run lines.
 
 ==============================================================================
 SSH                                                      *SpaceVim-layers-ssh*
